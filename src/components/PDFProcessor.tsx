@@ -1,26 +1,10 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Form } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { splitPDFByPage, extractTextFromPosition } from "@/services/pdfService";
-import { PDFDocument } from 'pdf-lib';
 import PDFViewer from "./PDFViewer";
 import ExtractedInfoTable from "./ExtractedInfoTable";
-
-interface ExtractedInfo {
-  pageNumber: number;
-  text: string;
-  position: { x: number; y: number };
-}
-
-const formSchema = z.object({
-  pageNumber: z.number().min(1, "Le numéro de page doit être supérieur à 0"),
-  selectedText: z.string().min(1, "Veuillez sélectionner un texte dans le PDF"),
-});
+import SelectedTextPreview from "./SelectedTextPreview";
+import PDFProcessingForm from "./PDFProcessingForm";
+import { usePDFTextExtraction } from "@/hooks/usePDFTextExtraction";
 
 interface PDFProcessorProps {
   selectedFile: File;
@@ -28,131 +12,44 @@ interface PDFProcessorProps {
 }
 
 const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => {
-  const [extractedInfos, setExtractedInfos] = useState<ExtractedInfo[]>([]);
-  const { toast } = useToast();
   const [selectedTextInfo, setSelectedTextInfo] = useState<{
     text: string;
     position: { x: number; y: number };
   } | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      pageNumber: 1,
-      selectedText: "",
-    },
-  });
+  const { extractedInfos, handleTextSelect, extractAllTexts } = usePDFTextExtraction(selectedFile);
 
-  const handleTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
-    setSelectedTextInfo({ text, position });
-    form.setValue("selectedText", text);
-    
-    setExtractedInfos(prev => {
-      const exists = prev.some(info => info.pageNumber === pageNumber);
-      if (exists) {
-        return prev.map(info => 
-          info.pageNumber === pageNumber 
-            ? { ...info, text, position } 
-            : info
-        );
-      }
-      return [...prev, { pageNumber, text, position }];
-    });
-  };
-
-  const extractAllTexts = async (totalPages: number, position: { x: number; y: number }) => {
-    const texts: { [pageNumber: number]: string } = {};
-    
-    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
-      console.log(`Extracting text from page ${pageNumber} at position:`, position);
-      const text = await extractTextFromPosition(selectedFile, position, pageNumber);
-      texts[pageNumber] = text;
-      console.log(`Found text at position: "${text}"`);
-    }
-    
-    return texts;
-  };
-
-  const handleProcessPDF = async () => {
-    if (!selectedFile || !selectedTextInfo) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un fichier PDF et extraire au moins une information.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const generatedFileNames: string[] = [];
-      const totalPages = await getNumberOfPages(selectedFile);
-      
-      // Extraire d'abord tous les textes aux positions sélectionnées
-      const pageTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
-      
-      // Générer les PDFs avec les noms basés sur les textes extraits
-      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
-        const pageText = pageTexts[pageNumber] || `page_${pageNumber}`;
-        const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
-        const fileName = `page_${pageNumber}_${pageText.replace(/\s+/g, '_')}.pdf`;
-        generatedFileNames.push(fileName);
-        
-        const downloadUrl = URL.createObjectURL(splitPdf);
-        localStorage.setItem(fileName, downloadUrl);
-      }
-      
-      onFilesGenerated(generatedFileNames);
-      toast({
-        title: "Traitement terminé",
-        description: "Les fichiers ont été générés avec succès.",
-      });
-    } catch (error) {
-      console.error('Erreur lors du traitement:', error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors du traitement du PDF.",
-        variant: "destructive",
-      });
-    }
+  const onTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
+    const textInfo = handleTextSelect(text, position, pageNumber);
+    setSelectedTextInfo(textInfo);
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
-      <PDFViewer file={selectedFile} onTextSelect={handleTextSelect} />
+      <PDFViewer file={selectedFile} onTextSelect={onTextSelect} />
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleProcessPDF)} className="space-y-4">
-          {selectedTextInfo && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-md">
-              <h4 className="font-medium mb-2">Texte sélectionné :</h4>
-              <p className="text-sm text-gray-600">{selectedTextInfo.text}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Position : x={selectedTextInfo.position.x}, y={selectedTextInfo.position.y}
-              </p>
-            </div>
-          )}
+      {selectedTextInfo && (
+        <SelectedTextPreview 
+          text={selectedTextInfo.text} 
+          position={selectedTextInfo.position} 
+        />
+      )}
 
-          {extractedInfos.length > 0 && (
-            <div className="mt-4">
-              <h4 className="font-medium mb-4">Informations extraites par page :</h4>
-              <ExtractedInfoTable extractedInfos={extractedInfos} />
-            </div>
-          )}
+      {extractedInfos.length > 0 && (
+        <div className="mt-4">
+          <h4 className="font-medium mb-4">Informations extraites par page :</h4>
+          <ExtractedInfoTable extractedInfos={extractedInfos} />
+        </div>
+      )}
 
-          <Button type="submit" className="w-full">
-            <Settings className="w-4 h-4 mr-2" />
-            Traiter le PDF
-          </Button>
-        </form>
-      </Form>
+      <PDFProcessingForm
+        selectedFile={selectedFile}
+        selectedTextInfo={selectedTextInfo}
+        onFilesGenerated={onFilesGenerated}
+        extractAllTexts={extractAllTexts}
+      />
     </div>
   );
-};
-
-const getNumberOfPages = async (file: File): Promise<number> => {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdfDoc = await PDFDocument.load(arrayBuffer);
-  return pdfDoc.getPageCount();
 };
 
 export default PDFProcessor;
