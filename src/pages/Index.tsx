@@ -1,17 +1,41 @@
 import { useState } from "react";
 import { Upload, FileText, Download, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+const formSchema = z.object({
+  pageNumber: z.number().min(1, "Le numéro de page doit être supérieur à 0"),
+  startPosition: z.number().min(0, "La position de début doit être positive"),
+  length: z.number().min(1, "La longueur doit être supérieure à 0"),
+});
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
   const { toast } = useToast();
+  const [pdfText, setPdfText] = useState<string>("");
 
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      pageNumber: 1,
+      startPosition: 0,
+      length: 10,
+    },
+  });
+
+  const handleFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file?.type === "application/pdf") {
       setSelectedFile(file);
+      // Simuler la lecture du texte du PDF (à remplacer par une vraie lecture)
+      setPdfText("Exemple de texte extrait du PDF...");
       toast({
         title: "PDF ajouté",
         description: `${file.name} a été ajouté avec succès.`,
@@ -25,10 +49,12 @@ const Index = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      // Simuler la lecture du texte du PDF (à remplacer par une vraie lecture)
+      setPdfText("Exemple de texte extrait du PDF...");
       toast({
         title: "PDF ajouté",
         description: `${file.name} a été ajouté avec succès.`,
@@ -40,18 +66,38 @@ const Index = () => {
     e.preventDefault();
   };
 
-  const handleProcessPDF = () => {
-    // Simulation du traitement pour la démo
-    console.log("Processing PDF:", selectedFile?.name);
-    const mockGeneratedFiles = [
-      "Dupont_Jean_12345_Janvier_1.pdf",
-      "Martin_Marie_67890_Janvier_2.pdf",
-    ];
-    setGeneratedFiles(mockGeneratedFiles);
-    toast({
-      title: "Traitement terminé",
-      description: "Les fichiers ont été générés avec succès.",
-    });
+  const handleProcessPDF = async (values: z.infer<typeof formSchema>) => {
+    if (!selectedFile) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez d'abord sélectionner un fichier PDF.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Processing PDF with config:", values);
+    console.log("Selected file:", selectedFile.name);
+
+    try {
+      // Simulation du traitement (à remplacer par l'appel à votre API)
+      const mockGeneratedFiles = [
+        `page_${values.pageNumber}_extrait.pdf`,
+        `page_${values.pageNumber + 1}_extrait.pdf`,
+      ];
+      
+      setGeneratedFiles(mockGeneratedFiles);
+      toast({
+        title: "Traitement terminé",
+        description: "Les fichiers ont été générés avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du traitement du PDF.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -64,7 +110,6 @@ const Index = () => {
           </p>
         </header>
 
-        {/* Zone de dépôt */}
         <div
           onDrop={handleFileDrop}
           onDragOver={handleDragOver}
@@ -86,7 +131,6 @@ const Index = () => {
           </label>
         </div>
 
-        {/* Fichier sélectionné */}
         {selectedFile && (
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
             <div className="flex items-center gap-4">
@@ -98,19 +142,76 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4">
-              <button
-                onClick={handleProcessPDF}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-                Traiter le PDF
-              </button>
-            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleProcessPDF)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="pageNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Numéro de page exemple</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field} 
+                          onChange={e => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="startPosition"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Position de début du texte</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="length"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Longueur du texte à extraire</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          {...field}
+                          onChange={e => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {pdfText && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-md">
+                    <h4 className="font-medium mb-2">Aperçu du texte extrait :</h4>
+                    <p className="text-sm text-gray-600">{pdfText}</p>
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Traiter le PDF
+                </Button>
+              </form>
+            </Form>
           </div>
         )}
 
-        {/* Fichiers générés */}
         {generatedFiles.length > 0 && (
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
             <h2 className="text-xl font-semibold mb-4">Fichiers générés</h2>
