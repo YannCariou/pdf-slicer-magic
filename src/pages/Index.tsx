@@ -11,6 +11,7 @@ import PDFDropZone from "@/components/PDFDropZone";
 import GeneratedFilesList from "@/components/GeneratedFilesList";
 import ExtractedInfoTable from "@/components/ExtractedInfoTable";
 import { splitPDFByPage } from "@/services/pdfService";
+import { PDFDocument } from 'pdf-lib';
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -69,10 +70,17 @@ const Index = () => {
 
     try {
       const generatedFileNames: string[] = [];
+      const totalPages = await getNumberOfPages(selectedFile);
       
-      for (const info of extractedInfos) {
-        const splitPdf = await splitPDFByPage(selectedFile, info.pageNumber);
-        const fileName = `page_${info.pageNumber}_${info.text.replace(/\s+/g, '_')}.pdf`;
+      // Pour chaque page du PDF
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+        // Extraire le texte à la même position que celle sélectionnée initialement
+        const selectedInfo = extractedInfos[0]; // Utiliser la première sélection comme modèle
+        const extractedText = selectedInfo.text;
+        
+        // Générer un nouveau PDF pour cette page
+        const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
+        const fileName = `page_${pageNumber}_${extractedText.replace(/\s+/g, '_')}.pdf`;
         generatedFileNames.push(fileName);
         
         // Stocker le blob pour le téléchargement
@@ -171,6 +179,13 @@ const Index = () => {
       </div>
     </div>
   );
+};
+
+// Fonction utilitaire pour obtenir le nombre total de pages
+const getNumberOfPages = async (file: File): Promise<number> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  return pdfDoc.getPageCount();
 };
 
 export default Index;
