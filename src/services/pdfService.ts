@@ -1,4 +1,5 @@
 import { PDFDocument } from 'pdf-lib';
+import * as pdfjs from 'pdfjs-dist';
 
 export const splitPDFByPage = async (pdfFile: File, pageNumber: number): Promise<Blob> => {
   const arrayBuffer = await pdfFile.arrayBuffer();
@@ -13,8 +14,39 @@ export const splitPDFByPage = async (pdfFile: File, pageNumber: number): Promise
   return new Blob([pdfBytes], { type: 'application/pdf' });
 };
 
-export const extractTextFromPosition = async (pdfFile: File, position: { x: number, y: number }, pageNumber: number): Promise<string> => {
-  // Cette fonction sera implémentée plus tard pour extraire le texte à la position spécifiée
-  // Pour l'instant, nous utilisons la position existante
-  return `page_${pageNumber}`;
+export const extractTextFromPosition = async (
+  pdfFile: File,
+  position: { x: number; y: number },
+  pageNumber: number
+): Promise<string> => {
+  const arrayBuffer = await pdfFile.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(pageNumber);
+  const textContent = await page.getTextContent();
+  
+  console.log(`Extracting text from page ${pageNumber} at position:`, position);
+  
+  // Trouver le texte le plus proche de la position spécifiée
+  let closestText = '';
+  let minDistance = Infinity;
+  
+  for (const item of textContent.items) {
+    const textItem = item as any;
+    const itemX = textItem.transform[4];
+    const itemY = textItem.transform[5];
+    
+    // Calculer la distance entre la position cliquée et la position du texte
+    const distance = Math.sqrt(
+      Math.pow(position.x - itemX, 2) + 
+      Math.pow(position.y - itemY, 2)
+    );
+    
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestText = textItem.str;
+    }
+  }
+  
+  console.log(`Found text at position: "${closestText}"`);
+  return closestText || `page_${pageNumber}`;
 };
