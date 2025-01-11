@@ -7,25 +7,27 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import PDFViewer from "@/components/PDFViewer";
 
 const formSchema = z.object({
   pageNumber: z.number().min(1, "Le numéro de page doit être supérieur à 0"),
-  startPosition: z.number().min(0, "La position de début doit être positive"),
-  length: z.number().min(1, "La longueur doit être supérieure à 0"),
+  selectedText: z.string().min(1, "Veuillez sélectionner un texte dans le PDF"),
 });
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
   const { toast } = useToast();
-  const [pdfText, setPdfText] = useState<string>("");
+  const [selectedTextInfo, setSelectedTextInfo] = useState<{
+    text: string;
+    position: { x: number; y: number };
+  } | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       pageNumber: 1,
-      startPosition: 0,
-      length: 10,
+      selectedText: "",
     },
   });
 
@@ -34,8 +36,6 @@ const Index = () => {
     const file = e.dataTransfer.files[0];
     if (file?.type === "application/pdf") {
       setSelectedFile(file);
-      // Simuler la lecture du texte du PDF (à remplacer par une vraie lecture)
-      setPdfText("Exemple de texte extrait du PDF...");
       toast({
         title: "PDF ajouté",
         description: `${file.name} a été ajouté avec succès.`,
@@ -53,8 +53,6 @@ const Index = () => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // Simuler la lecture du texte du PDF (à remplacer par une vraie lecture)
-      setPdfText("Exemple de texte extrait du PDF...");
       toast({
         title: "PDF ajouté",
         description: `${file.name} a été ajouté avec succès.`,
@@ -62,21 +60,27 @@ const Index = () => {
     }
   };
 
+  const handleTextSelect = (text: string, position: { x: number; y: number }) => {
+    setSelectedTextInfo({ text, position });
+    form.setValue("selectedText", text);
+  };
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
   const handleProcessPDF = async (values: z.infer<typeof formSchema>) => {
-    if (!selectedFile) {
+    if (!selectedFile || !selectedTextInfo) {
       toast({
         title: "Erreur",
-        description: "Veuillez d'abord sélectionner un fichier PDF.",
+        description: "Veuillez sélectionner un fichier PDF et le texte à extraire.",
         variant: "destructive",
       });
       return;
     }
 
     console.log("Processing PDF with config:", values);
+    console.log("Selected text position:", selectedTextInfo.position);
     console.log("Selected file:", selectedFile.name);
 
     try {
@@ -106,7 +110,7 @@ const Index = () => {
         <header className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-[#1E293B]">Découpe PDF</h1>
           <p className="text-lg text-gray-600">
-            Découpez et renommez vos fichiers PDF en quelques clics
+            Sélectionnez le texte qui servira de modèle pour découper votre PDF
           </p>
         </header>
 
@@ -143,6 +147,8 @@ const Index = () => {
               </div>
             </div>
 
+            <PDFViewer file={selectedFile} onTextSelect={handleTextSelect} />
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleProcessPDF)} className="space-y-4">
                 <FormField
@@ -162,44 +168,13 @@ const Index = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="startPosition"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Position de début du texte</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="length"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Longueur du texte à extraire</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          {...field}
-                          onChange={e => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {pdfText && (
+                {selectedTextInfo && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-md">
-                    <h4 className="font-medium mb-2">Aperçu du texte extrait :</h4>
-                    <p className="text-sm text-gray-600">{pdfText}</p>
+                    <h4 className="font-medium mb-2">Texte sélectionné :</h4>
+                    <p className="text-sm text-gray-600">{selectedTextInfo.text}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Position : x={selectedTextInfo.position.x}, y={selectedTextInfo.position.y}
+                    </p>
                   </div>
                 )}
 
