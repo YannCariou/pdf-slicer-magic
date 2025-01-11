@@ -59,8 +59,12 @@ const PDFProcessingForm = ({
         
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        // Utiliser un nom de fichier basé sur le numéro de page uniquement
-        const fileName = `page_${pageNumber}.pdf`;
+        // Utiliser le texte extrait pour le nom du fichier
+        const fileName = extractedText 
+          ? `${extractedText.trim().replace(/[^a-zA-Z0-9-_.]/g, '_')}.pdf`
+          : `page_${pageNumber}.pdf`;
+        
+        console.log(`Nom de fichier généré : ${fileName}`);
         generatedFileNames.push(fileName);
         
         const downloadUrl = URL.createObjectURL(splitPdf);
