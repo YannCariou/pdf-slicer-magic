@@ -60,6 +60,19 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     });
   };
 
+  const extractAllTexts = async (totalPages: number, position: { x: number; y: number }) => {
+    const texts: { [pageNumber: number]: string } = {};
+    
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+      console.log(`Extracting text from page ${pageNumber} at position:`, position);
+      const text = await extractTextFromPosition(selectedFile, position, pageNumber);
+      texts[pageNumber] = text;
+      console.log(`Found text at position: "${text}"`);
+    }
+    
+    return texts;
+  };
+
   const handleProcessPDF = async () => {
     if (!selectedFile || !selectedTextInfo) {
       toast({
@@ -74,21 +87,16 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       const generatedFileNames: string[] = [];
       const totalPages = await getNumberOfPages(selectedFile);
       
-      // Pour chaque page du PDF
+      // Extraire d'abord tous les textes aux positions sélectionnées
+      const pageTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
+      
+      // Générer les PDFs avec les noms basés sur les textes extraits
       for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
-        // Extraire le texte à la même position sur chaque page
-        const textAtPosition = await extractTextFromPosition(
-          selectedFile,
-          selectedTextInfo.position,
-          pageNumber
-        );
-        
-        // Générer un nouveau PDF pour cette page
+        const pageText = pageTexts[pageNumber] || `page_${pageNumber}`;
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
-        const fileName = `page_${pageNumber}_${textAtPosition.replace(/\s+/g, '_')}.pdf`;
+        const fileName = `page_${pageNumber}_${pageText.replace(/\s+/g, '_')}.pdf`;
         generatedFileNames.push(fileName);
         
-        // Stocker le blob pour le téléchargement
         const downloadUrl = URL.createObjectURL(splitPdf);
         localStorage.setItem(fileName, downloadUrl);
       }
