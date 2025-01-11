@@ -6,7 +6,7 @@ import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { splitPDFByPage } from "@/services/pdfService";
+import { splitPDFByPage, extractTextFromPosition } from "@/services/pdfService";
 import { PDFDocument } from 'pdf-lib';
 import PDFViewer from "./PDFViewer";
 import ExtractedInfoTable from "./ExtractedInfoTable";
