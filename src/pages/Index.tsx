@@ -8,6 +8,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import PDFViewer from "@/components/PDFViewer";
+import ExtractedInfoTable from "@/components/ExtractedInfoTable";
+
+interface ExtractedInfo {
+  pageNumber: number;
+  text: string;
+}
 
 const formSchema = z.object({
   pageNumber: z.number().min(1, "Le numéro de page doit être supérieur à 0"),
@@ -22,6 +28,7 @@ const Index = () => {
     text: string;
     position: { x: number; y: number };
   } | null>(null);
+  const [extractedInfos, setExtractedInfos] = useState<ExtractedInfo[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,6 +70,21 @@ const Index = () => {
   const handleTextSelect = (text: string, position: { x: number; y: number }) => {
     setSelectedTextInfo({ text, position });
     form.setValue("selectedText", text);
+    
+    // Ajouter l'information extraite au tableau
+    const currentPage = form.getValues("pageNumber");
+    setExtractedInfos(prev => {
+      // Remplacer si la page existe déjà, sinon ajouter
+      const exists = prev.some(info => info.pageNumber === currentPage);
+      if (exists) {
+        return prev.map(info => 
+          info.pageNumber === currentPage 
+            ? { ...info, text } 
+            : info
+        );
+      }
+      return [...prev, { pageNumber: currentPage, text }];
+    });
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -70,25 +92,22 @@ const Index = () => {
   };
 
   const handleProcessPDF = async (values: z.infer<typeof formSchema>) => {
-    if (!selectedFile || !selectedTextInfo) {
+    if (!selectedFile || extractedInfos.length === 0) {
       toast({
         title: "Erreur",
-        description: "Veuillez sélectionner un fichier PDF et le texte à extraire.",
+        description: "Veuillez sélectionner un fichier PDF et extraire au moins une information.",
         variant: "destructive",
       });
       return;
     }
 
-    console.log("Processing PDF with config:", values);
-    console.log("Selected text position:", selectedTextInfo.position);
-    console.log("Selected file:", selectedFile.name);
-
+    console.log("Processing PDF with extracted infos:", extractedInfos);
+    
     try {
       // Simulation du traitement (à remplacer par l'appel à votre API)
-      const mockGeneratedFiles = [
-        `page_${values.pageNumber}_extrait.pdf`,
-        `page_${values.pageNumber + 1}_extrait.pdf`,
-      ];
+      const mockGeneratedFiles = extractedInfos.map(info => 
+        `page_${info.pageNumber}_${info.text.replace(/\s+/g, '_')}.pdf`
+      );
       
       setGeneratedFiles(mockGeneratedFiles);
       toast({
@@ -175,6 +194,13 @@ const Index = () => {
                     <p className="text-xs text-gray-500 mt-1">
                       Position : x={selectedTextInfo.position.x}, y={selectedTextInfo.position.y}
                     </p>
+                  </div>
+                )}
+
+                {extractedInfos.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium mb-4">Informations extraites par page :</h4>
+                    <ExtractedInfoTable extractedInfos={extractedInfos} />
                   </div>
                 )}
 
