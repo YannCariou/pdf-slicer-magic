@@ -10,7 +10,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PDFViewerProps {
   file: File | null;
-  onTextSelect: (text: string, position: { x: number; y: number }) => void;
+  onTextSelect: (text: string, position: { x: number; y: number }, pageNumber: number) => void;
 }
 
 const PDFViewer = ({ file, onTextSelect }: PDFViewerProps) => {
@@ -34,10 +34,10 @@ const PDFViewer = ({ file, onTextSelect }: PDFViewerProps) => {
       onTextSelect(selection.toString(), {
         x: rect.x,
         y: rect.y
-      });
+      }, pageNumber);
       toast({
         title: "Texte sélectionné",
-        description: `"${selection.toString()}" sera utilisé comme modèle`,
+        description: `"${selection.toString()}" sera utilisé comme modèle pour la page ${pageNumber}`,
       });
     }
   };

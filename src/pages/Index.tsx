@@ -67,23 +67,21 @@ const Index = () => {
     }
   };
 
-  const handleTextSelect = (text: string, position: { x: number; y: number }) => {
+  const handleTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
     setSelectedTextInfo({ text, position });
     form.setValue("selectedText", text);
     
-    // Ajouter l'information extraite au tableau
-    const currentPage = form.getValues("pageNumber");
+    // Mettre à jour les informations extraites avec le numéro de page correct
     setExtractedInfos(prev => {
-      // Remplacer si la page existe déjà, sinon ajouter
-      const exists = prev.some(info => info.pageNumber === currentPage);
+      const exists = prev.some(info => info.pageNumber === pageNumber);
       if (exists) {
         return prev.map(info => 
-          info.pageNumber === currentPage 
+          info.pageNumber === pageNumber 
             ? { ...info, text } 
             : info
         );
       }
-      return [...prev, { pageNumber: currentPage, text }];
+      return [...prev, { pageNumber, text }];
     });
   };
 
@@ -118,6 +116,42 @@ const Index = () => {
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors du traitement du PDF.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownload = async (fileName: string) => {
+    if (!selectedFile) return;
+    
+    try {
+      // Simulation du téléchargement (à remplacer par l'appel à votre API)
+      const response = await fetch(URL.createObjectURL(selectedFile));
+      const blob = await response.blob();
+      
+      // Créer un lien de téléchargement
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      
+      // Déclencher le téléchargement
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Nettoyer l'URL
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "Téléchargement réussi",
+        description: `Le fichier ${fileName} a été téléchargé.`,
+      });
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le fichier.",
         variant: "destructive",
       });
     }
@@ -226,9 +260,14 @@ const Index = () => {
                     <FileText className="w-5 h-5 text-gray-500" />
                     <span>{file}</span>
                   </div>
-                  <button className="p-2 text-primary hover:text-primary-hover transition-colors">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDownload(file)}
+                    className="text-primary hover:text-primary-hover transition-colors"
+                  >
                     <Download className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
