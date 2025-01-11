@@ -52,11 +52,21 @@ const PDFProcessingForm = ({
       const pageTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
       console.log("Textes extraits :", pageTexts);
       
+      // Créer un tableau pour stocker toutes les promesses de traitement
+      const processingPromises = [];
+      
       for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
         console.log(`Traitement de la page ${pageNumber}`);
-        const pageText = pageTexts[pageNumber] || `page_${pageNumber}`;
+        const extractedText = pageTexts[pageNumber];
+        console.log(`Texte extrait pour la page ${pageNumber}:`, extractedText);
+        
+        if (!extractedText) {
+          console.log(`Aucun texte trouvé pour la page ${pageNumber}, utilisation du numéro de page`);
+        }
+        
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
-        const fileName = `page_${pageNumber}_${pageText.replace(/\s+/g, '_')}.pdf`;
+        // Utiliser le texte extrait s'il existe, sinon utiliser un texte par défaut
+        const fileName = `page_${pageNumber}_${extractedText ? extractedText.trim().replace(/\s+/g, '_') : 'sans_texte'}.pdf`;
         generatedFileNames.push(fileName);
         
         const downloadUrl = URL.createObjectURL(splitPdf);
