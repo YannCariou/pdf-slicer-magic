@@ -9,9 +9,7 @@ import { PDFDocument } from 'pdf-lib';
 import { splitPDFByPage } from "@/services/pdfService";
 import { useToast } from "@/hooks/use-toast";
 
-const formSchema = z.object({
-  selectedText: z.string().min(1, "Veuillez sélectionner un texte dans le PDF"),
-});
+const formSchema = z.object({});
 
 interface PDFProcessingFormProps {
   selectedFile: File;
@@ -29,12 +27,11 @@ const PDFProcessingForm = ({
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      selectedText: "",
-    },
+    defaultValues: {},
   });
 
   const handleProcessPDF = async () => {
+    console.log("Début du traitement du PDF");
     if (!selectedFile || !selectedTextInfo) {
       toast({
         title: "Erreur",
@@ -45,13 +42,18 @@ const PDFProcessingForm = ({
     }
 
     try {
+      console.log("Chargement du PDF");
       const generatedFileNames: string[] = [];
       const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
       const totalPages = pdfDoc.getPageCount();
+      console.log(`Nombre total de pages : ${totalPages}`);
       
+      console.log("Extraction des textes pour toutes les pages");
       const pageTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
+      console.log("Textes extraits :", pageTexts);
       
       for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+        console.log(`Traitement de la page ${pageNumber}`);
         const pageText = pageTexts[pageNumber] || `page_${pageNumber}`;
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         const fileName = `page_${pageNumber}_${pageText.replace(/\s+/g, '_')}.pdf`;
@@ -59,6 +61,7 @@ const PDFProcessingForm = ({
         
         const downloadUrl = URL.createObjectURL(splitPdf);
         localStorage.setItem(fileName, downloadUrl);
+        console.log(`Fichier généré : ${fileName}`);
       }
       
       onFilesGenerated(generatedFileNames);
@@ -78,7 +81,10 @@ const PDFProcessingForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleProcessPDF)} className="space-y-4">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        handleProcessPDF();
+      }} className="space-y-4">
         <Button type="submit" className="w-full">
           <Settings className="w-4 h-4 mr-2" />
           Traiter le PDF
