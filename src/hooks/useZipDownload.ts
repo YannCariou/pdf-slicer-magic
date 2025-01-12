@@ -86,6 +86,7 @@ export const useZipDownload = (month?: string, year?: string) => {
       const zipUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = zipUrl;
+      // Nouveau format de nom pour le fichier ZIP : BP_AAAAMM.zip
       const zipFileName = `BP_20${year}${month}.zip`;
       console.log(`Nom du fichier ZIP: ${zipFileName}`);
       link.download = zipFileName;
