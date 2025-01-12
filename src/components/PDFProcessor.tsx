@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { PDFDocument } from 'pdf-lib';
 import PDFViewer from "./PDFViewer";
 import ExtractedInfoTable from "./ExtractedInfoTable";
-import PDFProcessingForm from "./PDFProcessingForm";
 import { usePDFTextExtraction } from "@/hooks/usePDFTextExtraction";
 import { useToast } from "@/hooks/use-toast";
+import { splitPDFByPage } from "@/services/pdfService";
 
 interface PDFProcessorProps {
   selectedFile: File;
@@ -13,7 +13,6 @@ interface PDFProcessorProps {
 }
 
 const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => {
-  const [isTableValidated, setIsTableValidated] = useState(false);
   const { toast } = useToast();
   
   const { 
@@ -21,7 +20,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     extractAllTexts 
   } = usePDFTextExtraction(selectedFile);
 
-  const handleTableValidation = () => {
+  const handleTableValidation = async () => {
     if (extractedInfos.length === 0) {
       toast({
         title: "Erreur",
@@ -30,12 +29,44 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       });
       return;
     }
-    
-    setIsTableValidated(true);
-    toast({
-      title: "Tableau validé",
-      description: "Vous pouvez maintenant générer les fichiers",
-    });
+
+    try {
+      console.log("Début du traitement du PDF");
+      const generatedFileNames: string[] = [];
+      const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
+      const totalPages = pdfDoc.getPageCount();
+      
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+        const info = extractedInfos.find(info => info.pageNumber === pageNumber);
+        if (!info) continue;
+
+        console.log(`Traitement de la page ${pageNumber}`);
+        const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
+        
+        const fileName = info.text 
+          ? `${info.text.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-_.]/g, '_')}.pdf`
+          : `page_${pageNumber}.pdf`;
+        
+        console.log(`Nom de fichier généré : ${fileName}`);
+        generatedFileNames.push(fileName);
+        
+        const downloadUrl = URL.createObjectURL(splitPdf);
+        localStorage.setItem(fileName, downloadUrl);
+      }
+      
+      onFilesGenerated(generatedFileNames);
+      toast({
+        title: "Traitement terminé",
+        description: "Les fichiers ont été générés avec succès.",
+      });
+    } catch (error) {
+      console.error("Erreur lors du traitement:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du traitement du PDF.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExtractAll = async () => {
@@ -61,18 +92,6 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     }
   };
 
-  // Récupérer la première entrée pour obtenir les positions
-  const firstInfo = extractedInfos[0];
-  const selectedTextInfo = firstInfo ? {
-    text: firstInfo.text,
-    position: { x: 0, y: 0 } // Les positions seront ajustées par extractAllTexts
-  } : null;
-  
-  const referenceTextInfo = firstInfo ? {
-    text: firstInfo.referenceText || "",
-    position: { x: 0, y: 0 } // Les positions seront ajustées par extractAllTexts
-  } : null;
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
       <Button 
@@ -92,16 +111,6 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
             onValidate={handleTableValidation}
           />
         </div>
-      )}
-
-      {isTableValidated && (
-        <PDFProcessingForm
-          selectedFile={selectedFile}
-          onFilesGenerated={onFilesGenerated}
-          extractAllTexts={extractAllTexts}
-          selectedTextInfo={selectedTextInfo}
-          referenceTextInfo={referenceTextInfo}
-        />
       )}
     </div>
   );
