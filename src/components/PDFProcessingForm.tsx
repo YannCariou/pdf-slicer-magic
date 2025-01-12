@@ -14,13 +14,15 @@ const formSchema = z.object({});
 interface PDFProcessingFormProps {
   selectedFile: File;
   selectedTextInfo: { text: string; position: { x: number; y: number } } | null;
+  referenceTextInfo: { text: string; position: { x: number; y: number } } | null;
   onFilesGenerated: (files: string[]) => void;
   extractAllTexts: (totalPages: number, position: { x: number; y: number }) => Promise<{ [pageNumber: number]: string }>;
 }
 
 const PDFProcessingForm = ({ 
   selectedFile, 
-  selectedTextInfo, 
+  selectedTextInfo,
+  referenceTextInfo,
   onFilesGenerated,
   extractAllTexts 
 }: PDFProcessingFormProps) => {
@@ -32,10 +34,10 @@ const PDFProcessingForm = ({
 
   const handleProcessPDF = async () => {
     console.log("Début du traitement du PDF");
-    if (!selectedFile || !selectedTextInfo) {
+    if (!selectedFile || !selectedTextInfo || !referenceTextInfo) {
       toast({
         title: "Erreur",
-        description: "Veuillez sélectionner un fichier PDF et extraire au moins une information.",
+        description: "Veuillez sélectionner un fichier PDF et les deux informations nécessaires.",
         variant: "destructive",
       });
       return;
@@ -49,19 +51,22 @@ const PDFProcessingForm = ({
       console.log(`Nombre total de pages : ${totalPages}`);
       
       console.log("Extraction des textes pour toutes les pages");
-      const pageTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
-      console.log("Textes extraits :", pageTexts);
+      const targetTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
+      const referenceTexts = await extractAllTexts(totalPages, referenceTextInfo.position);
+      
+      console.log("Textes extraits :", { targetTexts, referenceTexts });
       
       for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
         console.log(`Traitement de la page ${pageNumber}`);
-        const extractedText = pageTexts[pageNumber];
-        console.log(`Texte extrait pour la page ${pageNumber}:`, extractedText);
+        const targetText = targetTexts[pageNumber];
+        const referenceText = referenceTexts[pageNumber];
+        
+        console.log(`Page ${pageNumber} - Référence: ${referenceText}, Cible: ${targetText}`);
         
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        // Utiliser le texte extrait pour le nom du fichier, en conservant les caractères valides
-        const fileName = extractedText 
-          ? `${extractedText.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-_.]/g, '_')}.pdf`
+        const fileName = targetText 
+          ? `${targetText.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-_.]/g, '_')}.pdf`
           : `page_${pageNumber}.pdf`;
         
         console.log(`Nom de fichier généré : ${fileName}`);
