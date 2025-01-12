@@ -16,16 +16,21 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
       
       for (const fileName of files) {
         console.log(`Tentative de téléchargement pour ${fileName}`);
-        const downloadUrl = localStorage.getItem(fileName);
+        const pdfData = localStorage.getItem(fileName);
         
-        if (!downloadUrl) {
-          console.error(`URL non trouvée pour ${fileName}`);
+        if (!pdfData) {
+          console.error(`Données non trouvées pour ${fileName}`);
           continue;
         }
 
-        // Convertir l'URL en Blob
-        const response = await fetch(downloadUrl);
-        const blob = await response.blob();
+        // Convertir les données base64 en Blob
+        const byteCharacters = atob(pdfData.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
         
         // Créer une URL à partir du Blob
         const blobUrl = window.URL.createObjectURL(blob);
