@@ -32,7 +32,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   } = useTextSelection();
 
   const onTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
-    const textInfo = handleTextSelect(text, position);
+    console.log('Text selected:', { text, position, pageNumber });
+    handleTextSelect(text, position);
     handleExtractedTextSelect(text, position, pageNumber);
   };
 

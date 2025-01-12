@@ -10,17 +10,20 @@ export const useTextSelection = () => {
   const [referenceTextInfo, setReferenceTextInfo] = useState<TextInfo | null>(null);
   const [selectionMode, setSelectionMode] = useState<'target' | 'reference'>('target');
 
-  const handleTextSelect = (text: string, position: { x: number; y: number }) => {
-    console.log(`Text selected in ${selectionMode} mode:`, text);
+  const handleTextSelect = (text: string, position: { x: number; y: number }): TextInfo => {
+    const newTextInfo = { text, position };
+    
     if (selectionMode === 'target') {
-      setSelectedTextInfo({ text, position });
+      console.log('Setting target text:', newTextInfo);
+      setSelectedTextInfo(newTextInfo);
       setSelectionMode('reference');
-      return { text, position };
     } else {
-      setReferenceTextInfo({ text, position });
+      console.log('Setting reference text:', newTextInfo);
+      setReferenceTextInfo(newTextInfo);
       setSelectionMode('target');
-      return { text, position };
     }
+    
+    return newTextInfo;
   };
 
   return {
