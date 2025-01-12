@@ -72,51 +72,47 @@ export const findTextAfterReference = async (
   console.log(`Searching for text after "${referenceText}" on page ${pageNumber}`);
   
   let referencePosition: { x: number; y: number } | null = null;
-  let targetText = '';
-  let targetPosition: { x: number; y: number } | null = null;
+  let referenceIndex = -1;
   
-  // Trouver d'abord la position du texte de référence
-  for (const item of textContent.items) {
-    const textItem = item as any;
+  // Trouver d'abord la position du texte de référence et son index
+  for (let i = 0; i < textContent.items.length; i++) {
+    const textItem = textContent.items[i] as any;
     if (textItem.str.includes(referenceText)) {
       referencePosition = {
         x: textItem.transform[4],
         y: textItem.transform[5]
       };
+      referenceIndex = i;
       break;
     }
   }
   
-  if (referencePosition) {
-    // Chercher le texte qui suit sur la même ligne
-    let minDistance = Infinity;
+  if (referencePosition && referenceIndex !== -1) {
+    // Chercher le texte qui suit immédiatement la référence
+    const nextItems = textContent.items.slice(referenceIndex + 1);
     const verticalTolerance = 5;
     
-    for (const item of textContent.items) {
+    for (const item of nextItems) {
       const textItem = item as any;
-      const itemX = textItem.transform[4];
       const itemY = textItem.transform[5];
       
       // Vérifier si c'est sur la même ligne (à peu près)
       if (Math.abs(itemY - referencePosition.y) <= verticalTolerance) {
-        // Ne prendre que les textes qui sont à droite de la référence
-        if (itemX > referencePosition.x) {
-          const distance = itemX - referencePosition.x;
-          if (distance < minDistance) {
-            minDistance = distance;
-            targetText = textItem.str;
-            targetPosition = { x: itemX, y: itemY };
-          }
+        // Ignorer les caractères spéciaux comme ":" et les espaces
+        if (textItem.str.trim() && textItem.str.trim() !== ':') {
+          console.log(`Found text "${textItem.str}" after "${referenceText}" on page ${pageNumber}`);
+          return {
+            text: textItem.str.trim(),
+            position: {
+              x: textItem.transform[4],
+              y: itemY
+            }
+          };
         }
       }
     }
   }
   
-  if (!targetText || !targetPosition) {
-    console.warn(`No text found after "${referenceText}" on page ${pageNumber}`);
-    return { text: '', position: { x: 0, y: 0 } };
-  }
-  
-  console.log(`Found text "${targetText}" after "${referenceText}" on page ${pageNumber}`);
-  return { text: targetText, position: targetPosition };
+  console.warn(`No valid text found after "${referenceText}" on page ${pageNumber}`);
+  return { text: '', position: { x: 0, y: 0 } };
 };
