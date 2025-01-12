@@ -4,38 +4,36 @@ import { useToast } from "@/hooks/use-toast";
 
 interface GeneratedFilesListProps {
   files: string[];
+  onDownload: (fileName: string) => void;
 }
 
-const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
+const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
   const { toast } = useToast();
 
-  const downloadFile = async (fileName: string) => {
+  const handleDownload = async (fileName: string) => {
     try {
-      console.log(`Tentative de téléchargement pour ${fileName}`);
-      const url = window[`pdf_${fileName}`];
-      
-      if (!url) {
-        console.error(`URL non trouvée pour ${fileName}`);
-        throw new Error("URL non trouvée");
+      const downloadUrl = localStorage.getItem(fileName);
+      if (!downloadUrl) {
+        throw new Error("URL not found");
       }
 
+      // Créer un lien temporaire pour le téléchargement
       const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
+      link.href = downloadUrl;
+      link.download = fileName; // Définit le nom du fichier pour le téléchargement
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      console.log(`Téléchargement réussi pour ${fileName}`);
+
       toast({
         title: "Téléchargement réussi",
         description: `Le fichier ${fileName} a été téléchargé.`,
       });
     } catch (error) {
-      console.error(`Erreur lors du téléchargement de ${fileName}:`, error);
+      console.error('Erreur lors du téléchargement:', error);
       toast({
         title: "Erreur",
-        description: `Impossible de télécharger ${fileName}`,
+        description: "Impossible de télécharger le fichier.",
         variant: "destructive",
       });
     }
@@ -56,11 +54,11 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
             </div>
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => downloadFile(file)}
-              className="ml-2"
+              size="icon"
+              onClick={() => handleDownload(file)}
+              className="text-primary hover:text-primary-hover transition-colors"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-5 h-5" />
             </Button>
           </div>
         ))}
