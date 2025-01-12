@@ -24,9 +24,16 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         }
 
         try {
+          // Convertir base64 en Blob
+          const base64Response = await fetch(base64Data);
+          const blob = await base64Response.blob();
+          
+          // Créer une URL à partir du Blob
+          const blobUrl = URL.createObjectURL(blob);
+          
           // Créer un lien temporaire pour le téléchargement
           const link = document.createElement('a');
-          link.href = base64Data;
+          link.href = blobUrl;
           link.download = fileName;
           
           // Ajouter le lien au document
@@ -37,6 +44,7 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
           
           // Nettoyer
           document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
           
           console.log(`Fichier ${fileName} téléchargé avec succès`);
           
