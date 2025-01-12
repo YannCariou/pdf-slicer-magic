@@ -44,7 +44,6 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
     try {
       const zip = new JSZip();
       
-      // Ajouter chaque fichier au ZIP
       for (const fileName of files) {
         const downloadUrl = localStorage.getItem(fileName);
         if (!downloadUrl) {
@@ -53,9 +52,28 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
         }
         
         try {
-          // Convertir le Data URL en Blob
+          // Vérifier si l'URL est valide
+          if (!downloadUrl.startsWith('data:')) {
+            console.error(`Invalid URL format for ${fileName}`);
+            continue;
+          }
+
+          // Extraire les données base64
           const base64Data = downloadUrl.split(',')[1];
-          const blob = await fetch(`data:application/pdf;base64,${base64Data}`).then(res => res.blob());
+          if (!base64Data) {
+            console.error(`No base64 data found for ${fileName}`);
+            continue;
+          }
+
+          // Convertir base64 en Blob
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
+          
           zip.file(fileName, blob);
           console.log(`Fichier ${fileName} ajouté au ZIP avec succès`);
         } catch (error) {
