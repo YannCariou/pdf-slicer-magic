@@ -24,29 +24,38 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         }
 
         try {
-          // Créer un Blob à partir des données base64
-          const response = await fetch(base64Data);
-          const blob = await response.blob();
+          // Convertir base64 en binaire
+          const base64Content = base64Data.split(',')[1];
+          const binaryStr = window.atob(base64Content);
+          const bytes = new Uint8Array(binaryStr.length);
           
-          // Créer un lien de téléchargement
-          const downloadUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.setAttribute('download', fileName);
-          document.body.appendChild(link);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
           
-          // Forcer le téléchargement
-          link.click();
+          // Créer le blob
+          const blob = new Blob([bytes], { type: 'application/pdf' });
           
-          // Nettoyer après un court délai
-          await new Promise(resolve => setTimeout(resolve, 500));
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(downloadUrl);
+          // Créer et cliquer sur le lien de téléchargement
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          document.body.appendChild(a);
+          a.style.display = 'none';
+          a.href = url;
+          a.download = fileName;
+          
+          console.log(`Démarrage du téléchargement pour ${fileName}`);
+          a.click();
+          
+          // Nettoyer
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
           
           console.log(`Fichier ${fileName} téléchargé avec succès`);
           
           // Attendre entre chaque téléchargement
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
         } catch (error) {
           console.error(`Erreur lors du traitement du fichier ${fileName}:`, error);
           throw error;
