@@ -135,6 +135,12 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     handleExtractAll();
   };
 
+  const handleDownloadAll = () => {
+    if (generatedFiles.length > 0) {
+      generatedFiles.forEach(file => handleDownloadSingleFile(file));
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-100 space-y-4">
       {!showTable ? (
@@ -183,6 +189,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
                 onValidate={handleTableValidation}
                 generatedFiles={generatedFiles}
                 onDownloadFile={handleDownloadSingleFile}
+                onDownloadAll={handleDownloadAll}
+                hasGeneratedFiles={generatedFiles.length > 0}
               />
             </div>
           )}

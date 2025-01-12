@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import PDFDropZone from "@/components/PDFDropZone";
-import GeneratedFilesList from "@/components/GeneratedFilesList";
 import PDFProcessor from "@/components/PDFProcessor";
 
 const Index = () => {
@@ -33,14 +32,6 @@ const Index = () => {
           <PDFProcessor 
             selectedFile={selectedFile}
             onFilesGenerated={handleFilesGenerated}
-          />
-        )}
-
-        {generatedFiles.length > 0 && (
-          <GeneratedFilesList 
-            files={generatedFiles}
-            month={month}
-            year={year}
           />
         )}
       </div>

@@ -21,19 +21,44 @@ interface ExtractedInfoTableProps {
   onValidate: () => void;
   generatedFiles?: string[];
   onDownloadFile?: (fileName: string) => void;
+  onDownloadAll?: () => void;
+  hasGeneratedFiles: boolean;
 }
 
 const ExtractedInfoTable = ({ 
   extractedInfos, 
   onValidate, 
   generatedFiles = [],
-  onDownloadFile
+  onDownloadFile,
+  onDownloadAll,
+  hasGeneratedFiles
 }: ExtractedInfoTableProps) => {
   console.log("Rendering table with extracted infos:", extractedInfos);
   console.log("Generated files:", generatedFiles);
   
   return (
     <div className="w-full space-y-4">
+      <div className="flex justify-end gap-4 mb-4">
+        <Button 
+          onClick={onValidate}
+          className="flex items-center gap-2"
+          disabled={hasGeneratedFiles}
+        >
+          <Check className="w-4 h-4" />
+          Valider et générer les fichiers
+        </Button>
+        {hasGeneratedFiles && onDownloadAll && (
+          <Button
+            onClick={onDownloadAll}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <Download className="w-4 h-4" />
+            Tout télécharger
+          </Button>
+        )}
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -65,16 +90,6 @@ const ExtractedInfoTable = ({
           ))}
         </TableBody>
       </Table>
-      
-      <div className="flex justify-end">
-        <Button 
-          onClick={onValidate}
-          className="flex items-center gap-2"
-        >
-          <Check className="w-4 h-4" />
-          Valider et générer les fichiers
-        </Button>
-      </div>
     </div>
   );
 };
