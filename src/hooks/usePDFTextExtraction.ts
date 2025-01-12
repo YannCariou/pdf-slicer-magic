@@ -1,50 +1,16 @@
 import { useState } from "react";
-import { extractTextFromPosition } from "@/services/pdfService";
+import { findTextAfterReference } from "@/services/pdfService";
 
 interface ExtractedInfo {
   pageNumber: number;
   text: string;
   referenceText?: string;
-  position: { x: number; y: number };
-  referencePosition?: { x: number; y: number };
 }
 
 export const usePDFTextExtraction = (selectedFile: File | null) => {
   const [extractedInfos, setExtractedInfos] = useState<ExtractedInfo[]>([]);
-  const [targetPosition, setTargetPosition] = useState<{ x: number; y: number } | null>(null);
-  const [referencePosition, setReferencePosition] = useState<{ x: number; y: number } | null>(null);
-
-  const handleTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
-    console.log(`Handling text selection for page ${pageNumber}:`, { text, position });
-    
-    const exists = extractedInfos.some(info => info.pageNumber === pageNumber);
-    
-    if (exists) {
-      // Mise à jour de l'information de référence
-      setReferencePosition(position);
-      setExtractedInfos(prev => 
-        prev.map(info => 
-          info.pageNumber === pageNumber 
-            ? { 
-                ...info, 
-                referenceText: text,
-                referencePosition: position
-              } 
-            : info
-        )
-      );
-    } else {
-      // Nouvelle entrée avec l'information cible
-      setTargetPosition(position);
-      setExtractedInfos(prev => [...prev, { 
-        pageNumber, 
-        text,
-        position,
-      }]);
-    }
-  };
-
-  const extractAllTexts = async (totalPages: number, position: { x: number; y: number }) => {
+  
+  const extractAllTexts = async (totalPages: number) => {
     console.log("Starting text extraction for all pages");
     const texts: { [pageNumber: number]: string } = {};
     
@@ -55,10 +21,38 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
     
     for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
       try {
-        const text = await extractTextFromPosition(selectedFile, position, pageNumber);
-        texts[pageNumber] = text;
+        // Extraire le matricule (après "Matricule")
+        const matriculeResult = await findTextAfterReference(selectedFile, "Matricule", pageNumber);
+        // Extraire le nom (après "Nom(s) & Prénom(s)")
+        const nomResult = await findTextAfterReference(selectedFile, "Nom(s) & Prénom(s)", pageNumber);
         
-        console.log(`Extracted text for page ${pageNumber}:`, text);
+        // Mettre à jour les informations extraites
+        setExtractedInfos(prev => {
+          const existingInfo = prev.find(info => info.pageNumber === pageNumber);
+          if (existingInfo) {
+            return prev.map(info => 
+              info.pageNumber === pageNumber 
+                ? {
+                    ...info,
+                    text: matriculeResult.text,
+                    referenceText: nomResult.text
+                  }
+                : info
+            );
+          } else {
+            return [...prev, {
+              pageNumber,
+              text: matriculeResult.text,
+              referenceText: nomResult.text
+            }];
+          }
+        });
+        
+        texts[pageNumber] = matriculeResult.text;
+        console.log(`Extracted for page ${pageNumber}:`, {
+          matricule: matriculeResult.text,
+          nom: nomResult.text
+        });
       } catch (error) {
         console.error(`Error extracting text from page ${pageNumber}:`, error);
         texts[pageNumber] = '';
@@ -70,7 +64,6 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
 
   return {
     extractedInfos,
-    handleTextSelect,
     extractAllTexts
   };
 };

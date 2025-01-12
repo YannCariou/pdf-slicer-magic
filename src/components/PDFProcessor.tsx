@@ -3,9 +3,6 @@ import PDFViewer from "./PDFViewer";
 import ExtractedInfoTable from "./ExtractedInfoTable";
 import PDFProcessingForm from "./PDFProcessingForm";
 import { usePDFTextExtraction } from "@/hooks/usePDFTextExtraction";
-import { useTextSelection } from "@/hooks/useTextSelection";
-import SelectionModeButtons from "./SelectionModeButtons";
-import SelectedTextInfo from "./SelectedTextInfo";
 import { useToast } from "@/hooks/use-toast";
 
 interface PDFProcessorProps {
@@ -19,31 +16,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   
   const { 
     extractedInfos, 
-    handleTextSelect: handleExtractedTextSelect, 
     extractAllTexts 
   } = usePDFTextExtraction(selectedFile);
-  
-  const {
-    selectedTextInfo,
-    referenceTextInfo,
-    selectionMode,
-    handleTextSelect,
-    setSelectionMode
-  } = useTextSelection();
-
-  const onTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
-    console.log('Text selected:', { text, position, pageNumber });
-    
-    // Gérer la sélection de texte dans l'ordre approprié
-    const textInfo = handleTextSelect(text, position);
-    handleExtractedTextSelect(text, position, pageNumber);
-    
-    // Afficher un toast pour confirmer la sélection
-    toast({
-      title: "Texte sélectionné",
-      description: `"${text}" a été sélectionné pour la page ${pageNumber}`,
-    });
-  };
 
   const handleTableValidation = () => {
     if (extractedInfos.length === 0) {
@@ -62,19 +36,36 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     });
   };
 
+  const handleExtractAll = async () => {
+    try {
+      const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
+      const totalPages = pdfDoc.getPageCount();
+      await extractAllTexts(totalPages);
+      
+      toast({
+        title: "Extraction réussie",
+        description: "Les informations ont été extraites de toutes les pages",
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'extraction:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'extraction",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
-      <SelectionModeButtons 
-        selectionMode={selectionMode}
-        onModeChange={setSelectionMode}
-      />
+      <Button 
+        onClick={handleExtractAll}
+        className="w-full mb-4"
+      >
+        Extraire toutes les informations
+      </Button>
 
-      <PDFViewer file={selectedFile} onTextSelect={onTextSelect} />
-
-      <SelectedTextInfo 
-        selectedTextInfo={selectedTextInfo}
-        referenceTextInfo={referenceTextInfo}
-      />
+      <PDFViewer file={selectedFile} onTextSelect={() => {}} />
 
       {extractedInfos.length > 0 && (
         <div className="mt-4">
@@ -89,8 +80,6 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       {isTableValidated && (
         <PDFProcessingForm
           selectedFile={selectedFile}
-          selectedTextInfo={selectedTextInfo}
-          referenceTextInfo={referenceTextInfo}
           onFilesGenerated={onFilesGenerated}
           extractAllTexts={extractAllTexts}
         />
