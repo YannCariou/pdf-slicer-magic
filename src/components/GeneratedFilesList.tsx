@@ -11,6 +11,7 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
 
   const handleDownload = async (fileName: string) => {
     try {
+      console.log(`Début du téléchargement de ${fileName}`);
       const downloadUrl = localStorage.getItem(fileName);
       if (!downloadUrl) {
         throw new Error("URL not found");
