@@ -27,24 +27,31 @@ export const extractTextFromPosition = async (
   
   let closestText = '';
   let minDistance = Infinity;
-  const tolerance = 50; // Tolérance de 50 pixels pour la position
+  const horizontalTolerance = 100; // Tolérance horizontale plus large
+  const verticalTolerance = 10; // Tolérance verticale plus stricte
   
   for (const item of textContent.items) {
     const textItem = item as any;
     const itemX = textItem.transform[4];
     const itemY = textItem.transform[5];
     
-    // Calculer la distance euclidienne entre la position cliquée et la position du texte
-    const distance = Math.sqrt(
-      Math.pow(position.x - itemX, 2) + 
-      Math.pow(position.y - itemY, 2)
-    );
-    
-    // Ne considérer que les textes dans la zone de tolérance
-    if (distance < tolerance && distance < minDistance) {
-      minDistance = distance;
-      closestText = textItem.str;
-      console.log(`Found closer text: "${closestText}" at distance ${distance}`);
+    // Vérifier d'abord si nous sommes dans la même zone verticale
+    const verticalDistance = Math.abs(position.y - itemY);
+    if (verticalDistance <= verticalTolerance) {
+      // Si nous sommes dans la bonne zone verticale, calculer la distance horizontale
+      const horizontalDistance = Math.abs(position.x - itemX);
+      if (horizontalDistance <= horizontalTolerance) {
+        const totalDistance = Math.sqrt(
+          Math.pow(horizontalDistance, 2) + 
+          Math.pow(verticalDistance, 2)
+        );
+        
+        if (totalDistance < minDistance) {
+          minDistance = totalDistance;
+          closestText = textItem.str;
+          console.log(`Found closer text: "${closestText}" at distance ${totalDistance} (v:${verticalDistance}, h:${horizontalDistance})`);
+        }
+      }
     }
   }
   

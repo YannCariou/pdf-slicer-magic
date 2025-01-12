@@ -22,7 +22,7 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
             ? { 
                 ...info, 
                 referenceText: text,
-                position: info.position // Garder la position originale
+                position: position // Utiliser la nouvelle position pour la référence
               } 
             : info
         );
@@ -35,7 +35,7 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
     console.log("Starting text extraction for all pages with position:", position);
     const texts: { [pageNumber: number]: string } = {};
     
-    // Créer une copie de la position pour éviter les références circulaires
+    // Créer une copie de la position pour chaque page
     const fixedPosition = { x: position.x, y: position.y };
     
     for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
