@@ -6,14 +6,33 @@ import ExtractedInfoTable from "./ExtractedInfoTable";
 import { usePDFTextExtraction } from "@/hooks/usePDFTextExtraction";
 import { useToast } from "@/hooks/use-toast";
 import { splitPDFByPage } from "@/services/pdfService";
+import { Input } from "@/components/ui/input";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface PDFProcessorProps {
   selectedFile: File;
   onFilesGenerated: (files: string[]) => void;
 }
 
+const formSchema = z.object({
+  month: z.string().regex(/^(0[1-9]|1[0-2])$/, "Le mois doit être au format MM (01-12)"),
+  year: z.string().regex(/^[0-9]{2}$/, "L'année doit être au format AA (00-99)")
+});
+
 const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => {
   const { toast } = useToast();
+  const [showTable, setShowTable] = useState(false);
+  
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      month: "",
+      year: ""
+    }
+  });
   
   const { 
     extractedInfos, 
@@ -78,6 +97,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       console.log(`Nombre total de pages : ${totalPages}`);
       
       await extractAllTexts(totalPages);
+      setShowTable(true);
       
       toast({
         title: "Extraction réussie",
@@ -93,25 +113,61 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     }
   };
 
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log("Période sélectionnée:", `${values.month}/${values.year}`);
+    handleExtractAll();
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
-      <Button 
-        onClick={handleExtractAll}
-        className="w-full mb-4"
-      >
-        Extraire toutes les informations
-      </Button>
+      {!showTable ? (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="month"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mois (MM)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="MM" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Année (AA)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="AA" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Extraire toutes les informations
+            </Button>
+          </form>
+        </Form>
+      ) : (
+        <>
+          <PDFViewer file={selectedFile} onTextSelect={() => {}} />
 
-      <PDFViewer file={selectedFile} onTextSelect={() => {}} />
-
-      {extractedInfos.length > 0 && (
-        <div className="mt-4">
-          <h4 className="font-medium mb-4">Informations extraites par page :</h4>
-          <ExtractedInfoTable 
-            extractedInfos={extractedInfos} 
-            onValidate={handleTableValidation}
-          />
-        </div>
+          {extractedInfos.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-medium mb-4">Informations extraites par page :</h4>
+              <ExtractedInfoTable 
+                extractedInfos={extractedInfos} 
+                onValidate={handleTableValidation}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
