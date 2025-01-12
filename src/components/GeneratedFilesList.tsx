@@ -7,10 +7,10 @@ interface GeneratedFilesListProps {
   onDownload: (fileName: string) => void;
 }
 
-const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
+const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
   const { toast } = useToast();
 
-  const downloadSingleFile = async (fileName: string) => {
+  const downloadFile = async (fileName: string) => {
     try {
       console.log(`Tentative de téléchargement pour ${fileName}`);
       const storedData = localStorage.getItem(fileName);
@@ -20,18 +20,17 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         throw new Error("Données non trouvées");
       }
 
-      // Reconstruire le blob à partir des données stockées
       const { type, data } = JSON.parse(storedData);
       const blob = new Blob([new Uint8Array(data)], { type });
+      const url = URL.createObjectURL(blob);
 
-      // Créer et déclencher le téléchargement
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
+      link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
+      URL.revokeObjectURL(url);
       
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -44,30 +43,6 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         title: "Erreur",
         description: `Impossible de télécharger ${fileName}`,
         variant: "destructive",
-      });
-    }
-  };
-
-  const handleDownloadAll = async () => {
-    console.log("Début du téléchargement groupé");
-    let successCount = 0;
-    
-    for (const fileName of files) {
-      try {
-        await downloadSingleFile(fileName);
-        successCount++;
-        if (successCount < files.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      } catch (error) {
-        console.error(`Erreur lors du téléchargement de ${fileName}:`, error);
-      }
-    }
-
-    if (successCount > 0) {
-      toast({
-        title: "Téléchargements terminés",
-        description: `${successCount} fichier(s) sur ${files.length} ont été téléchargés.`,
       });
     }
   };
@@ -88,7 +63,7 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => downloadSingleFile(file)}
+              onClick={() => downloadFile(file)}
               className="ml-2"
             >
               <Download className="w-4 h-4" />
@@ -96,18 +71,6 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
           </div>
         ))}
       </div>
-      
-      {files.length > 0 && (
-        <div className="mt-4 flex justify-end">
-          <Button
-            onClick={handleDownloadAll}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-5 h-5" />
-            Télécharger la sélection ({files.length} fichier{files.length > 1 ? 's' : ''})
-          </Button>
-        </div>
-      )}
     </div>
   );
 };
