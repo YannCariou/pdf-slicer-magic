@@ -40,7 +40,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     extractAllTexts 
   } = usePDFTextExtraction(selectedFile);
 
-  const handleTableValidation = async () => {
+  const handleTableValidation = async (selectedPages: number[]) => {
     if (extractedInfos.length === 0) {
       toast({
         title: "Erreur",
@@ -51,23 +51,19 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     }
 
     try {
-      console.log("Début du traitement du PDF");
+      console.log("Début du traitement du PDF pour les pages:", selectedPages);
       const generatedFileNames: string[] = [];
-      const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
-      const totalPages = pdfDoc.getPageCount();
       
-      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+      for (const pageNumber of selectedPages) {
         const info = extractedInfos.find(info => info.pageNumber === pageNumber);
         if (!info) continue;
 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        // Créer le nom du fichier avec le format "Nom Prénom Matricule AAAA_MM.pdf"
         const fileName = `${info.referenceText} ${info.text} ${period}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        // Créer un Blob à partir du PDF
         const blob = new Blob([splitPdf], { type: 'application/pdf' });
         const downloadUrl = URL.createObjectURL(blob);
         
@@ -78,7 +74,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       onFilesGenerated(generatedFileNames);
       toast({
         title: "Traitement terminé",
-        description: "Les fichiers ont été générés avec succès.",
+        description: `${generatedFileNames.length} fichier(s) ont été générés avec succès.`,
       });
     } catch (error) {
       console.error("Erreur lors du traitement:", error);
