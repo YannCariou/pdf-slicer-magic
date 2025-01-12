@@ -54,16 +54,18 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
         
         try {
           // Convertir le Data URL en Blob
-          const response = await fetch(downloadUrl);
-          const blob = await response.blob();
+          const base64Data = downloadUrl.split(',')[1];
+          const blob = await fetch(`data:application/pdf;base64,${base64Data}`).then(res => res.blob());
           zip.file(fileName, blob);
+          console.log(`Fichier ${fileName} ajouté au ZIP avec succès`);
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
         }
       }
       
-      // Générer le ZIP
+      console.log("Génération du ZIP...");
       const zipBlob = await zip.generateAsync({type: "blob"});
+      console.log("ZIP généré avec succès");
       
       // Créer un URL pour le téléchargement
       const zipUrl = URL.createObjectURL(zipBlob);
