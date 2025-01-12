@@ -7,6 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -16,11 +18,12 @@ interface ExtractedInfo {
 
 interface ExtractedInfoTableProps {
   extractedInfos: ExtractedInfo[];
+  onValidate: () => void;
 }
 
-const ExtractedInfoTable = ({ extractedInfos }: ExtractedInfoTableProps) => {
+const ExtractedInfoTable = ({ extractedInfos, onValidate }: ExtractedInfoTableProps) => {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
       <Table>
         <TableHeader>
           <TableRow>
@@ -39,6 +42,16 @@ const ExtractedInfoTable = ({ extractedInfos }: ExtractedInfoTableProps) => {
           ))}
         </TableBody>
       </Table>
+      
+      <div className="flex justify-end">
+        <Button 
+          onClick={onValidate}
+          className="flex items-center gap-2"
+        >
+          <Check className="w-4 h-4" />
+          Valider et générer les fichiers
+        </Button>
+      </div>
     </div>
   );
 };

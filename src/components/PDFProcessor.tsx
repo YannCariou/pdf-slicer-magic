@@ -6,6 +6,7 @@ import { usePDFTextExtraction } from "@/hooks/usePDFTextExtraction";
 import { useTextSelection } from "@/hooks/useTextSelection";
 import SelectionModeButtons from "./SelectionModeButtons";
 import SelectedTextInfo from "./SelectedTextInfo";
+import { useToast } from "@/hooks/use-toast";
 
 interface PDFProcessorProps {
   selectedFile: File;
@@ -13,7 +14,15 @@ interface PDFProcessorProps {
 }
 
 const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => {
-  const { extractedInfos, handleTextSelect: handleExtractedTextSelect, extractAllTexts } = usePDFTextExtraction(selectedFile);
+  const [isTableValidated, setIsTableValidated] = useState(false);
+  const { toast } = useToast();
+  
+  const { 
+    extractedInfos, 
+    handleTextSelect: handleExtractedTextSelect, 
+    extractAllTexts 
+  } = usePDFTextExtraction(selectedFile);
+  
   const {
     selectedTextInfo,
     referenceTextInfo,
@@ -25,6 +34,23 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   const onTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
     const textInfo = handleTextSelect(text, position);
     handleExtractedTextSelect(text, position, pageNumber);
+  };
+
+  const handleTableValidation = () => {
+    if (extractedInfos.length === 0) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez d'abord extraire des informations du PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsTableValidated(true);
+    toast({
+      title: "Tableau validé",
+      description: "Vous pouvez maintenant générer les fichiers",
+    });
   };
 
   return (
@@ -44,17 +70,22 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       {extractedInfos.length > 0 && (
         <div className="mt-4">
           <h4 className="font-medium mb-4">Informations extraites par page :</h4>
-          <ExtractedInfoTable extractedInfos={extractedInfos} />
+          <ExtractedInfoTable 
+            extractedInfos={extractedInfos} 
+            onValidate={handleTableValidation}
+          />
         </div>
       )}
 
-      <PDFProcessingForm
-        selectedFile={selectedFile}
-        selectedTextInfo={selectedTextInfo}
-        referenceTextInfo={referenceTextInfo}
-        onFilesGenerated={onFilesGenerated}
-        extractAllTexts={extractAllTexts}
-      />
+      {isTableValidated && (
+        <PDFProcessingForm
+          selectedFile={selectedFile}
+          selectedTextInfo={selectedTextInfo}
+          referenceTextInfo={referenceTextInfo}
+          onFilesGenerated={onFilesGenerated}
+          extractAllTexts={extractAllTexts}
+        />
+      )}
     </div>
   );
 };
