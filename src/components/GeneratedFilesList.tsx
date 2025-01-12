@@ -10,69 +10,69 @@ interface GeneratedFilesListProps {
 const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
   const { toast } = useToast();
 
-  const handleDownloadAll = async () => {
+  const downloadSingleFile = async (fileName: string) => {
     try {
-      console.log("Début du téléchargement groupé");
+      console.log(`Téléchargement unique du fichier ${fileName}`);
+      const base64Data = localStorage.getItem(fileName);
       
-      for (const fileName of files) {
-        console.log(`Tentative de téléchargement pour ${fileName}`);
-        const base64Data = localStorage.getItem(fileName);
-        
-        if (!base64Data) {
-          console.error(`Données non trouvées pour ${fileName}`);
-          continue;
-        }
-
-        try {
-          // Convertir base64 en binaire
-          const base64Content = base64Data.split(',')[1];
-          const binaryStr = window.atob(base64Content);
-          const bytes = new Uint8Array(binaryStr.length);
-          
-          for (let i = 0; i < binaryStr.length; i++) {
-            bytes[i] = binaryStr.charCodeAt(i);
-          }
-          
-          // Créer le blob
-          const blob = new Blob([bytes], { type: 'application/pdf' });
-          
-          // Créer et cliquer sur le lien de téléchargement
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          document.body.appendChild(a);
-          a.style.display = 'none';
-          a.href = url;
-          a.download = fileName;
-          
-          console.log(`Démarrage du téléchargement pour ${fileName}`);
-          a.click();
-          
-          // Nettoyer
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-          
-          console.log(`Fichier ${fileName} téléchargé avec succès`);
-          
-          // Attendre entre chaque téléchargement
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-        } catch (error) {
-          console.error(`Erreur lors du traitement du fichier ${fileName}:`, error);
-          throw error;
-        }
+      if (!base64Data) {
+        console.error(`Données non trouvées pour ${fileName}`);
+        throw new Error("Données non trouvées");
       }
 
+      const base64Content = base64Data.split(',')[1];
+      const binaryStr = window.atob(base64Content);
+      const bytes = new Uint8Array(binaryStr.length);
+      
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      
+      console.log(`Clic sur le lien pour ${fileName}`);
+      a.click();
+      
+      // Attendre un peu avant de nettoyer
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      console.log(`Fichier ${fileName} téléchargé avec succès`);
+      
       toast({
         title: "Téléchargement réussi",
-        description: `${files.length} fichier(s) ont été téléchargés.`,
+        description: `Le fichier ${fileName} a été téléchargé.`,
       });
     } catch (error) {
-      console.error('Erreur lors du téléchargement:', error);
+      console.error(`Erreur lors du téléchargement de ${fileName}:`, error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors du téléchargement des fichiers.",
+        description: `Impossible de télécharger ${fileName}`,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    console.log("Début du téléchargement groupé");
+    
+    for (const fileName of files) {
+      try {
+        await downloadSingleFile(fileName);
+        // Attendre entre chaque fichier
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error(`Erreur lors du téléchargement de ${fileName}:`, error);
+      }
     }
   };
 
@@ -89,6 +89,14 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
               <FileText className="w-5 h-5 text-gray-500" />
               <span>{file}</span>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => downloadSingleFile(file)}
+              className="ml-2"
+            >
+              <Download className="w-4 h-4" />
+            </Button>
           </div>
         ))}
       </div>
