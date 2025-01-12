@@ -19,9 +19,10 @@ interface ExtractedInfo {
 interface ExtractedInfoTableProps {
   extractedInfos: ExtractedInfo[];
   onValidate: () => void;
+  period?: string;
 }
 
-const ExtractedInfoTable = ({ extractedInfos, onValidate }: ExtractedInfoTableProps) => {
+const ExtractedInfoTable = ({ extractedInfos, onValidate, period }: ExtractedInfoTableProps) => {
   console.log("Rendering table with extracted infos:", extractedInfos);
   
   return (
@@ -32,6 +33,7 @@ const ExtractedInfoTable = ({ extractedInfos, onValidate }: ExtractedInfoTablePr
             <TableHead className="w-24">N° Page</TableHead>
             <TableHead>Nom(s) & Prénom(s)</TableHead>
             <TableHead>Matricule</TableHead>
+            <TableHead>Période</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -40,6 +42,7 @@ const ExtractedInfoTable = ({ extractedInfos, onValidate }: ExtractedInfoTablePr
               <TableCell>{info.pageNumber}</TableCell>
               <TableCell>{info.referenceText || "Non extrait"}</TableCell>
               <TableCell>{info.text}</TableCell>
+              <TableCell>{period}</TableCell>
             </TableRow>
           ))}
         </TableBody>
