@@ -43,14 +43,15 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        const fileName = info.text 
-          ? `${info.text.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-_.]/g, '_')}.pdf`
-          : `page_${pageNumber}.pdf`;
-        
+        // Utiliser le matricule comme nom de fichier
+        const fileName = `${info.text.trim()}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
-        generatedFileNames.push(fileName);
         
-        const downloadUrl = URL.createObjectURL(splitPdf);
+        // Créer un Blob à partir du PDF
+        const blob = new Blob([splitPdf], { type: 'application/pdf' });
+        const downloadUrl = URL.createObjectURL(blob);
+        
+        generatedFileNames.push(fileName);
         localStorage.setItem(fileName, downloadUrl);
       }
       
