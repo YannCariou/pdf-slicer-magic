@@ -27,6 +27,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   const [showTable, setShowTable] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<string>("");
   const [currentYear, setCurrentYear] = useState<string>("");
+  const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -40,6 +41,18 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     extractedInfos, 
     extractAllTexts 
   } = usePDFTextExtraction(selectedFile);
+
+  const handleDownloadSingleFile = (fileName: string) => {
+    const url = localStorage.getItem(fileName);
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   const handleTableValidation = async () => {
     if (extractedInfos.length === 0) {
@@ -74,6 +87,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         localStorage.setItem(fileName, downloadUrl);
       }
       
+      setGeneratedFiles(generatedFileNames);
       onFilesGenerated(generatedFileNames, currentMonth, currentYear);
       toast({
         title: "Traitement terminé",
@@ -121,10 +135,10 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 space-y-4">
       {!showTable ? (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -157,7 +171,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
           </form>
         </Form>
       ) : (
-        <>
+        <div className="p-4 space-y-4">
           <PDFViewer file={selectedFile} onTextSelect={() => {}} />
 
           {extractedInfos.length > 0 && (
@@ -166,10 +180,12 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
               <ExtractedInfoTable 
                 extractedInfos={extractedInfos} 
                 onValidate={handleTableValidation}
+                generatedFiles={generatedFiles}
+                onDownloadFile={handleDownloadSingleFile}
               />
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

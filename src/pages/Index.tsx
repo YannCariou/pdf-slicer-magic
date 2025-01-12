@@ -18,11 +18,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-8">
-      <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-        <header className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-[#1E293B]">Découpe PDF</h1>
-          <p className="text-lg text-gray-600">
+    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4 md:px-6">
+      <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
+        <header className="text-center space-y-2">
+          <h1 className="text-3xl font-bold text-[#1E293B]">Découpe PDF</h1>
+          <p className="text-gray-600">
             Sélectionnez le texte qui servira de modèle pour découper votre PDF
           </p>
         </header>
