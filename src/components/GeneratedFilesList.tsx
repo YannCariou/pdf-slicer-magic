@@ -25,14 +25,20 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = fileName;
+        
+        // Ajouter le lien au document
         document.body.appendChild(link);
+        
+        // Déclencher le clic
         link.click();
+        
+        // Retirer le lien du document
         document.body.removeChild(link);
         
         console.log(`Fichier ${fileName} téléchargé`);
         
-        // Petite pause entre chaque téléchargement pour éviter les problèmes de navigateur
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Attendre un peu entre chaque téléchargement
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       toast({
@@ -43,7 +49,7 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
       console.error('Erreur lors du téléchargement:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de télécharger les fichiers.",
+        description: "Une erreur est survenue lors du téléchargement des fichiers.",
         variant: "destructive",
       });
     }
