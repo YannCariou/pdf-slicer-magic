@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { PDFDocument } from 'pdf-lib';
 import PDFViewer from "./PDFViewer";
 import ExtractedInfoTable from "./ExtractedInfoTable";
 import PDFProcessingForm from "./PDFProcessingForm";
@@ -38,8 +40,11 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
 
   const handleExtractAll = async () => {
     try {
+      console.log("Début de l'extraction de toutes les pages");
       const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
       const totalPages = pdfDoc.getPageCount();
+      console.log(`Nombre total de pages : ${totalPages}`);
+      
       await extractAllTexts(totalPages);
       
       toast({
@@ -82,6 +87,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
           selectedFile={selectedFile}
           onFilesGenerated={onFilesGenerated}
           extractAllTexts={extractAllTexts}
+          selectedTextInfo={null}
+          referenceTextInfo={null}
         />
       )}
     </div>
