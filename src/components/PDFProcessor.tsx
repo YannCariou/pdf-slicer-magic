@@ -25,6 +25,8 @@ const formSchema = z.object({
 const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => {
   const { toast } = useToast();
   const [showTable, setShowTable] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState<string>("");
+  const [currentYear, setCurrentYear] = useState<string>("");
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,11 +64,9 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        // Créer le nom du fichier avec le format "Nom Prénom Matricule.pdf"
         const fileName = `${info.referenceText} ${info.text}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        // Créer un Blob à partir du PDF
         const blob = new Blob([splitPdf], { type: 'application/pdf' });
         const downloadUrl = URL.createObjectURL(blob);
         
@@ -115,6 +115,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log("Période sélectionnée:", `${values.month}/${values.year}`);
+    setCurrentMonth(values.month);
+    setCurrentYear(values.year);
     handleExtractAll();
   };
 

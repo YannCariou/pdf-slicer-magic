@@ -7,6 +7,8 @@ import PDFProcessor from "@/components/PDFProcessor";
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
+  const [month, setMonth] = useState<string>("");
+  const [year, setYear] = useState<string>("");
   const { toast } = useToast();
 
   return (
@@ -29,7 +31,11 @@ const Index = () => {
         )}
 
         {generatedFiles.length > 0 && (
-          <GeneratedFilesList files={generatedFiles} />
+          <GeneratedFilesList 
+            files={generatedFiles}
+            month={month}
+            year={year}
+          />
         )}
       </div>
     </div>

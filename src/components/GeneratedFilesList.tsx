@@ -5,9 +5,11 @@ import JSZip from "jszip";
 
 interface GeneratedFilesListProps {
   files: string[];
+  month?: string;
+  year?: string;
 }
 
-const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
+const GeneratedFilesList = ({ files, month, year }: GeneratedFilesListProps) => {
   const { toast } = useToast();
 
   const handleDownload = async (fileName: string) => {
@@ -53,7 +55,6 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
         }
         
         try {
-          // Récupérer le contenu du PDF directement depuis l'URL
           const response = await fetch(downloadUrl);
           if (!response.ok) {
             console.error(`Failed to fetch ${fileName}`);
@@ -89,7 +90,10 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
       const zipUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = zipUrl;
-      link.download = "documents.zip";
+      // Construire le nom du fichier ZIP avec le format BP_AAAAMM.zip
+      const zipFileName = `BP_20${year}${month}.zip`;
+      console.log(`Nom du fichier ZIP: ${zipFileName}`);
+      link.download = zipFileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
