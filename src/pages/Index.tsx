@@ -11,6 +11,12 @@ const Index = () => {
   const [year, setYear] = useState<string>("");
   const { toast } = useToast();
 
+  const handleFilesGenerated = (files: string[], month: string, year: string) => {
+    setGeneratedFiles(files);
+    setMonth(month);
+    setYear(year);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-8">
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
@@ -26,7 +32,7 @@ const Index = () => {
         {selectedFile && (
           <PDFProcessor 
             selectedFile={selectedFile}
-            onFilesGenerated={setGeneratedFiles}
+            onFilesGenerated={handleFilesGenerated}
           />
         )}
 

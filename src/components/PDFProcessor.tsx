@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 interface PDFProcessorProps {
   selectedFile: File;
-  onFilesGenerated: (files: string[]) => void;
+  onFilesGenerated: (files: string[], month: string, year: string) => void;
 }
 
 const formSchema = z.object({
@@ -74,7 +74,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         localStorage.setItem(fileName, downloadUrl);
       }
       
-      onFilesGenerated(generatedFileNames);
+      onFilesGenerated(generatedFileNames, currentMonth, currentYear);
       toast({
         title: "Traitement terminé",
         description: "Les fichiers ont été générés avec succès.",
