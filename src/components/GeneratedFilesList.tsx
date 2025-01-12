@@ -4,7 +4,6 @@ import { useToast } from "@/hooks/use-toast";
 
 interface GeneratedFilesListProps {
   files: string[];
-  onDownload: (fileName: string) => void;
 }
 
 const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
@@ -13,16 +12,12 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
   const downloadFile = async (fileName: string) => {
     try {
       console.log(`Tentative de téléchargement pour ${fileName}`);
-      const storedData = localStorage.getItem(fileName);
+      const url = window[`pdf_${fileName}`];
       
-      if (!storedData) {
-        console.error(`Données non trouvées pour ${fileName}`);
-        throw new Error("Données non trouvées");
+      if (!url) {
+        console.error(`URL non trouvée pour ${fileName}`);
+        throw new Error("URL non trouvée");
       }
-
-      const { type, data } = JSON.parse(storedData);
-      const blob = new Blob([new Uint8Array(data)], { type });
-      const url = URL.createObjectURL(blob);
 
       const link = document.createElement('a');
       link.href = url;
@@ -30,7 +25,6 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
       
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({

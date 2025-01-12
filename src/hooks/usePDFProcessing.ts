@@ -35,12 +35,9 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
         const fileName = `${info.referenceText} ${info.text} ${period}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        // Stocker le blob directement
-        const blobData = await splitPdf.arrayBuffer();
-        localStorage.setItem(fileName, JSON.stringify({
-          type: 'application/pdf',
-          data: Array.from(new Uint8Array(blobData))
-        }));
+        // Créer une URL pour le blob directement
+        const url = URL.createObjectURL(splitPdf);
+        window[`pdf_${fileName}`] = url; // Stocker l'URL dans une propriété window
         
         generatedFileNames.push(fileName);
       }
