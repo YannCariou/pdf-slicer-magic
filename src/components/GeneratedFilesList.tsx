@@ -15,15 +15,24 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
       console.log("Début du téléchargement groupé");
       
       for (const fileName of files) {
+        console.log(`Tentative de téléchargement pour ${fileName}`);
         const downloadUrl = localStorage.getItem(fileName);
+        
         if (!downloadUrl) {
           console.error(`URL non trouvée pour ${fileName}`);
           continue;
         }
 
+        // Convertir l'URL en Blob
+        const response = await fetch(downloadUrl);
+        const blob = await response.blob();
+        
+        // Créer une URL à partir du Blob
+        const blobUrl = window.URL.createObjectURL(blob);
+        
         // Créer un lien temporaire pour le téléchargement
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = blobUrl;
         link.download = fileName;
         
         // Ajouter le lien au document
@@ -32,12 +41,13 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         // Déclencher le clic
         link.click();
         
-        // Retirer le lien du document
+        // Nettoyer
         document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
         
-        console.log(`Fichier ${fileName} téléchargé`);
+        console.log(`Fichier ${fileName} téléchargé avec succès`);
         
-        // Attendre un peu entre chaque téléchargement
+        // Attendre entre chaque téléchargement
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
