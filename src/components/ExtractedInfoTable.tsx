@@ -30,8 +30,8 @@ const ExtractedInfoTable = ({ extractedInfos, onValidate }: ExtractedInfoTablePr
         <TableHeader>
           <TableRow>
             <TableHead className="w-24">N° Page</TableHead>
-            <TableHead>Information de référence</TableHead>
-            <TableHead>Information cible</TableHead>
+            <TableHead>Nom(s) & Prénom(s)</TableHead>
+            <TableHead>Matricule</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
