@@ -4,10 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface GeneratedFilesListProps {
   files: string[];
-  onDownload: (fileName: string) => void;
 }
 
-const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
+const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
   const { toast } = useToast();
 
   const handleDownload = async (fileName: string) => {
@@ -17,10 +16,9 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         throw new Error("URL not found");
       }
 
-      // Créer un lien temporaire pour le téléchargement
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = fileName; // Définit le nom du fichier pour le téléchargement
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -39,9 +37,44 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
     }
   };
 
+  const handleDownloadAll = async () => {
+    console.log("Début du téléchargement de tous les fichiers");
+    try {
+      // Créer un délai entre chaque téléchargement pour éviter les problèmes de navigateur
+      for (const fileName of files) {
+        await new Promise(resolve => setTimeout(resolve, 500)); // Attendre 500ms entre chaque téléchargement
+        await handleDownload(fileName);
+      }
+      
+      toast({
+        title: "Téléchargement terminé",
+        description: "Tous les fichiers ont été téléchargés avec succès.",
+      });
+    } catch (error) {
+      console.error('Erreur lors du téléchargement multiple:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du téléchargement des fichiers.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-4">Fichiers générés</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Fichiers générés</h2>
+        {files.length > 0 && (
+          <Button
+            onClick={handleDownloadAll}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <Download className="w-4 h-4" />
+            Tout télécharger
+          </Button>
+        )}
+      </div>
       <div className="space-y-3">
         {files.map((file, index) => (
           <div
