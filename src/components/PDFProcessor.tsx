@@ -33,8 +33,16 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
 
   const onTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
     console.log('Text selected:', { text, position, pageNumber });
-    handleTextSelect(text, position);
+    
+    // Gérer la sélection de texte dans l'ordre approprié
+    const textInfo = handleTextSelect(text, position);
     handleExtractedTextSelect(text, position, pageNumber);
+    
+    // Afficher un toast pour confirmer la sélection
+    toast({
+      title: "Texte sélectionné",
+      description: `"${text}" a été sélectionné pour la page ${pageNumber}`,
+    });
   };
 
   const handleTableValidation = () => {

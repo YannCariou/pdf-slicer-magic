@@ -24,38 +24,48 @@ export const extractTextFromPosition = async (
   const page = await pdf.getPage(pageNumber);
   const textContent = await page.getTextContent();
   
-  console.log(`Extracting ${isReference ? 'reference' : 'target'} text from page ${pageNumber} at position:`, position);
+  console.log(`Extracting text from page ${pageNumber} at position:`, position);
   
   let closestText = '';
   let minDistance = Infinity;
   
   // Ajuster les tolérances en fonction du type de texte
-  const horizontalTolerance = isReference ? 150 : 100; // Plus large pour la référence
-  const verticalTolerance = 15; // Tolérance verticale pour les deux types
+  const horizontalTolerance = 100;
+  const verticalTolerance = 5; // Réduire la tolérance verticale pour plus de précision
   
   for (const item of textContent.items) {
     const textItem = item as any;
     const itemX = textItem.transform[4];
     const itemY = textItem.transform[5];
     
+    // Calculer la distance verticale d'abord
     const verticalDistance = Math.abs(position.y - itemY);
+    
+    // Ne considérer que les éléments dans la tolérance verticale
     if (verticalDistance <= verticalTolerance) {
       const horizontalDistance = Math.abs(position.x - itemX);
+      
+      // Vérifier la distance horizontale
       if (horizontalDistance <= horizontalTolerance) {
         const totalDistance = Math.sqrt(
           Math.pow(horizontalDistance, 2) + 
-          Math.pow(verticalDistance, 2)
+          Math.pow(verticalDistance * 2, 2) // Donner plus de poids à la distance verticale
         );
         
         if (totalDistance < minDistance) {
           minDistance = totalDistance;
           closestText = textItem.str;
-          console.log(`Found ${isReference ? 'reference' : 'target'} text: "${closestText}" at distance ${totalDistance} (v:${verticalDistance}, h:${horizontalDistance})`);
+          console.log(`Found text: "${closestText}" at distance ${totalDistance} (v:${verticalDistance}, h:${horizontalDistance})`);
         }
       }
     }
   }
   
-  console.log(`Selected ${isReference ? 'reference' : 'target'} text for page ${pageNumber}: "${closestText}"`);
-  return closestText || `page_${pageNumber}`;
+  if (!closestText) {
+    console.warn(`No text found at position for page ${pageNumber}`);
+    return '';
+  }
+  
+  console.log(`Selected text for page ${pageNumber}: "${closestText}"`);
+  return closestText;
 };
