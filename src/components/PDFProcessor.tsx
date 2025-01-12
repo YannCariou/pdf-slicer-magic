@@ -61,6 +61,18 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     }
   };
 
+  // Récupérer la première entrée pour obtenir les positions
+  const firstInfo = extractedInfos[0];
+  const selectedTextInfo = firstInfo ? {
+    text: firstInfo.text,
+    position: { x: 0, y: 0 } // Les positions seront ajustées par extractAllTexts
+  } : null;
+  
+  const referenceTextInfo = firstInfo ? {
+    text: firstInfo.referenceText || "",
+    position: { x: 0, y: 0 } // Les positions seront ajustées par extractAllTexts
+  } : null;
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 space-y-4">
       <Button 
@@ -87,8 +99,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
           selectedFile={selectedFile}
           onFilesGenerated={onFilesGenerated}
           extractAllTexts={extractAllTexts}
-          selectedTextInfo={null}
-          referenceTextInfo={null}
+          selectedTextInfo={selectedTextInfo}
+          referenceTextInfo={referenceTextInfo}
         />
       )}
     </div>
