@@ -12,7 +12,7 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
   const [extractedInfos, setExtractedInfos] = useState<ExtractedInfo[]>([]);
 
   const handleTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
-    console.log(`Handling text selection for page ${pageNumber}:`, text);
+    console.log(`Handling text selection for page ${pageNumber}:`, { text, position });
     
     setExtractedInfos(prev => {
       const exists = prev.some(info => info.pageNumber === pageNumber);
@@ -22,7 +22,7 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
             ? { 
                 ...info, 
                 referenceText: text,
-                position 
+                position: info.position // Garder la position originale
               } 
             : info
         );
@@ -35,23 +35,29 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
     console.log("Starting text extraction for all pages with position:", position);
     const texts: { [pageNumber: number]: string } = {};
     
+    // Créer une copie de la position pour éviter les références circulaires
+    const fixedPosition = { x: position.x, y: position.y };
+    
     for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
-      console.log(`Extracting text from page ${pageNumber} at position:`, position);
+      console.log(`Extracting text from page ${pageNumber} at position:`, fixedPosition);
       try {
-        const text = await extractTextFromPosition(selectedFile!, position, pageNumber);
+        const text = await extractTextFromPosition(selectedFile!, fixedPosition, pageNumber);
         texts[pageNumber] = text;
         
-        // Mettre à jour extractedInfos avec les nouvelles informations
         setExtractedInfos(prev => {
-          const exists = prev.some(info => info.pageNumber === pageNumber);
-          if (!exists) {
+          const existingInfo = prev.find(info => info.pageNumber === pageNumber);
+          if (!existingInfo) {
             return [...prev, { 
               pageNumber, 
               text,
-              position 
+              position: fixedPosition 
             }];
           }
-          return prev;
+          return prev.map(info => 
+            info.pageNumber === pageNumber 
+              ? { ...info, text } 
+              : info
+          );
         });
         
         console.log(`Found text for page ${pageNumber}:`, text);

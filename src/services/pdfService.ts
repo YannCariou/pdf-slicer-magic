@@ -5,7 +5,6 @@ export const splitPDFByPage = async (pdfFile: File, pageNumber: number): Promise
   const arrayBuffer = await pdfFile.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
   
-  // Créer un nouveau document PDF avec une seule page
   const newPdfDoc = await PDFDocument.create();
   const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [pageNumber - 1]);
   newPdfDoc.addPage(copiedPage);
@@ -26,27 +25,29 @@ export const extractTextFromPosition = async (
   
   console.log(`Extracting text from page ${pageNumber} at position:`, position);
   
-  // Trouver le texte le plus proche de la position spécifiée
   let closestText = '';
   let minDistance = Infinity;
+  const tolerance = 50; // Tolérance de 50 pixels pour la position
   
   for (const item of textContent.items) {
     const textItem = item as any;
     const itemX = textItem.transform[4];
     const itemY = textItem.transform[5];
     
-    // Calculer la distance entre la position cliquée et la position du texte
+    // Calculer la distance euclidienne entre la position cliquée et la position du texte
     const distance = Math.sqrt(
       Math.pow(position.x - itemX, 2) + 
       Math.pow(position.y - itemY, 2)
     );
     
-    if (distance < minDistance) {
+    // Ne considérer que les textes dans la zone de tolérance
+    if (distance < tolerance && distance < minDistance) {
       minDistance = distance;
       closestText = textItem.str;
+      console.log(`Found closer text: "${closestText}" at distance ${distance}`);
     }
   }
   
-  console.log(`Found text at position: "${closestText}"`);
+  console.log(`Selected text for page ${pageNumber}: "${closestText}"`);
   return closestText || `page_${pageNumber}`;
 };
