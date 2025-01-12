@@ -23,34 +23,53 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
           continue;
         }
 
-        // Convertir les données base64 en Blob
-        const byteCharacters = atob(pdfData.split(',')[1]);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        console.log("Format des données PDF:", pdfData.substring(0, 100));
+
+        try {
+          // Vérifier si les données sont au format base64
+          if (!pdfData.includes('base64')) {
+            console.error("Les données ne sont pas au format base64");
+            throw new Error("Format de données invalide");
+          }
+
+          // Extraire la partie base64 des données
+          const base64Data = pdfData.split(',')[1];
+          console.log("Longueur des données base64:", base64Data.length);
+
+          // Convertir les données base64 en Blob
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
+          
+          console.log("Blob créé avec succès, taille:", blob.size);
+          
+          // Créer une URL à partir du Blob
+          const blobUrl = window.URL.createObjectURL(blob);
+          
+          // Créer un lien temporaire pour le téléchargement
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = fileName;
+          
+          // Ajouter le lien au document
+          document.body.appendChild(link);
+          
+          // Déclencher le clic
+          link.click();
+          
+          // Nettoyer
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(blobUrl);
+          
+          console.log(`Fichier ${fileName} téléchargé avec succès`);
+        } catch (error) {
+          console.error(`Erreur lors du traitement du fichier ${fileName}:`, error);
+          throw error;
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        
-        // Créer une URL à partir du Blob
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        // Créer un lien temporaire pour le téléchargement
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        
-        // Ajouter le lien au document
-        document.body.appendChild(link);
-        
-        // Déclencher le clic
-        link.click();
-        
-        // Nettoyer
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-        
-        console.log(`Fichier ${fileName} téléchargé avec succès`);
         
         // Attendre entre chaque téléchargement
         await new Promise(resolve => setTimeout(resolve, 1000));
