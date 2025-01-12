@@ -43,8 +43,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        // Utiliser le matricule comme nom de fichier
-        const fileName = `${info.text.trim()}.pdf`;
+        // Créer le nom du fichier avec le format "Nom Prénom Matricule.pdf"
+        const fileName = `${info.referenceText} ${info.text}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
         // Créer un Blob à partir du PDF
