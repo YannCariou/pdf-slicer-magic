@@ -9,32 +9,6 @@ const Index = () => {
   const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const handleDownload = async (fileName: string) => {
-    try {
-      const downloadUrl = localStorage.getItem(fileName);
-      if (!downloadUrl) throw new Error("URL not found");
-      
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast({
-        title: "Téléchargement réussi",
-        description: `Le fichier ${fileName} a été téléchargé.`,
-      });
-    } catch (error) {
-      console.error('Erreur lors du téléchargement:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de télécharger le fichier.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#F8FAFC] p-8">
       <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
@@ -55,7 +29,7 @@ const Index = () => {
         )}
 
         {generatedFiles.length > 0 && (
-          <GeneratedFilesList files={generatedFiles} onDownload={handleDownload} />
+          <GeneratedFilesList files={generatedFiles} />
         )}
       </div>
     </div>
