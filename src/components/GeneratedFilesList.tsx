@@ -1,6 +1,7 @@
 import { Download, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import JSZip from "jszip";
 
 interface GeneratedFilesListProps {
   files: string[];
@@ -39,23 +40,50 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
   };
 
   const handleDownloadAll = async () => {
-    console.log("Début du téléchargement de tous les fichiers");
+    console.log("Début de la création du ZIP");
     try {
-      // Créer un délai entre chaque téléchargement pour éviter les problèmes de navigateur
+      const zip = new JSZip();
+      
+      // Ajouter chaque fichier au ZIP
       for (const fileName of files) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Attendre 500ms entre chaque téléchargement
-        await handleDownload(fileName);
+        const downloadUrl = localStorage.getItem(fileName);
+        if (!downloadUrl) {
+          console.error(`URL not found for ${fileName}`);
+          continue;
+        }
+        
+        try {
+          // Convertir le Data URL en Blob
+          const response = await fetch(downloadUrl);
+          const blob = await response.blob();
+          zip.file(fileName, blob);
+        } catch (error) {
+          console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
+        }
       }
       
+      // Générer le ZIP
+      const zipBlob = await zip.generateAsync({type: "blob"});
+      
+      // Créer un URL pour le téléchargement
+      const zipUrl = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = zipUrl;
+      link.download = "documents.zip";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(zipUrl);
+
       toast({
-        title: "Téléchargement terminé",
-        description: "Tous les fichiers ont été téléchargés avec succès.",
+        title: "Téléchargement réussi",
+        description: "Tous les fichiers ont été téléchargés dans un ZIP.",
       });
     } catch (error) {
-      console.error('Erreur lors du téléchargement multiple:', error);
+      console.error('Erreur lors de la création du ZIP:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors du téléchargement des fichiers.",
+        description: "Une erreur est survenue lors de la création du ZIP.",
         variant: "destructive",
       });
     }
