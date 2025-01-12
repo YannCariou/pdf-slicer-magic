@@ -43,6 +43,7 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
     console.log("Début de la création du ZIP");
     try {
       const zip = new JSZip();
+      let hasFiles = false;
       
       for (const fileName of files) {
         const downloadUrl = localStorage.getItem(fileName);
@@ -52,40 +53,39 @@ const GeneratedFilesList = ({ files }: GeneratedFilesListProps) => {
         }
         
         try {
-          // Vérifier si l'URL est valide
-          if (!downloadUrl.startsWith('data:')) {
-            console.error(`Invalid URL format for ${fileName}`);
+          // Récupérer le contenu du PDF directement depuis l'URL
+          const response = await fetch(downloadUrl);
+          if (!response.ok) {
+            console.error(`Failed to fetch ${fileName}`);
             continue;
           }
-
-          // Extraire les données base64
-          const base64Data = downloadUrl.split(',')[1];
-          if (!base64Data) {
-            console.error(`No base64 data found for ${fileName}`);
-            continue;
-          }
-
-          // Convertir base64 en Blob
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'application/pdf' });
           
-          zip.file(fileName, blob);
-          console.log(`Fichier ${fileName} ajouté au ZIP avec succès`);
+          const pdfBlob = await response.blob();
+          if (pdfBlob.size === 0) {
+            console.error(`Empty PDF blob for ${fileName}`);
+            continue;
+          }
+          
+          zip.file(fileName, pdfBlob);
+          hasFiles = true;
+          console.log(`Fichier ${fileName} ajouté au ZIP avec succès, taille: ${pdfBlob.size} bytes`);
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
         }
       }
       
+      if (!hasFiles) {
+        throw new Error("Aucun fichier n'a pu être ajouté au ZIP");
+      }
+      
       console.log("Génération du ZIP...");
       const zipBlob = await zip.generateAsync({type: "blob"});
-      console.log("ZIP généré avec succès");
+      console.log(`ZIP généré avec succès, taille: ${zipBlob.size} bytes`);
       
-      // Créer un URL pour le téléchargement
+      if (zipBlob.size === 0) {
+        throw new Error("Le fichier ZIP généré est vide");
+      }
+      
       const zipUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = zipUrl;
