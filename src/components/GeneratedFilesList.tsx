@@ -24,9 +24,16 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         }
 
         try {
-          // Convertir base64 en Blob
-          const base64Response = await fetch(base64Data);
-          const blob = await base64Response.blob();
+          // Décoder la chaîne base64
+          const byteCharacters = atob(base64Data.split(',')[1]);
+          const byteNumbers = new Array(byteCharacters.length);
+          
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
           
           // Créer une URL à partir du Blob
           const blobUrl = URL.createObjectURL(blob);
@@ -35,6 +42,7 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
           const link = document.createElement('a');
           link.href = blobUrl;
           link.download = fileName;
+          link.style.display = 'none';
           
           // Ajouter le lien au document
           document.body.appendChild(link);
@@ -43,8 +51,10 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
           link.click();
           
           // Nettoyer
-          document.body.removeChild(link);
-          URL.revokeObjectURL(blobUrl);
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+          }, 100);
           
           console.log(`Fichier ${fileName} téléchargé avec succès`);
           
