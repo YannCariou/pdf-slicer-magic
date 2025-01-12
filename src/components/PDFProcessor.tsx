@@ -77,7 +77,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        const fileName = `${info.referenceText} ${info.text}.pdf`;
+        // Nouveau format de nom de fichier : "Nom(s) & Prénom(s)_Matricule_AAAAMM.pdf"
+        const fileName = `${info.referenceText}_${info.text}_${currentYear}${currentMonth}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
         const blob = new Blob([splitPdf], { type: 'application/pdf' });
