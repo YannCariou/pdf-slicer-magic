@@ -13,16 +13,16 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
   const downloadSingleFile = async (fileName: string) => {
     try {
       console.log(`Tentative de téléchargement pour ${fileName}`);
-      const url = localStorage.getItem(fileName);
+      const storedData = localStorage.getItem(fileName);
       
-      if (!url) {
-        console.error(`URL non trouvée pour ${fileName}`);
-        throw new Error("URL non trouvée");
+      if (!storedData) {
+        console.error(`Données non trouvées pour ${fileName}`);
+        throw new Error("Données non trouvées");
       }
 
-      // Créer un élément blob à partir de l'URL
-      const response = await fetch(url);
-      const blob = await response.blob();
+      // Reconstruire le blob à partir des données stockées
+      const { type, data } = JSON.parse(storedData);
+      const blob = new Blob([new Uint8Array(data)], { type });
       const downloadUrl = URL.createObjectURL(blob);
 
       // Créer et déclencher le téléchargement
@@ -60,7 +60,7 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         await downloadSingleFile(fileName);
         successCount++;
         if (successCount < files.length) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
         console.error(`Erreur lors du téléchargement de ${fileName}:`, error);

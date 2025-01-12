@@ -25,10 +25,9 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
       console.log("Début du traitement du PDF pour les pages:", selectedPages);
       const generatedFileNames: string[] = [];
       
-      // Créer un tableau de promesses pour traiter tous les fichiers
-      const processPromises = selectedPages.map(async (pageNumber) => {
+      for (const pageNumber of selectedPages) {
         const info = extractedInfos.find(info => info.pageNumber === pageNumber);
-        if (!info) return null;
+        if (!info) continue;
 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
@@ -36,20 +35,19 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
         const fileName = `${info.referenceText} ${info.text} ${period}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        const url = URL.createObjectURL(splitPdf);
-        localStorage.setItem(fileName, url);
+        // Stocker directement le blob
+        localStorage.setItem(fileName, JSON.stringify({
+          type: splitPdf.type,
+          data: Array.from(new Uint8Array(await splitPdf.arrayBuffer()))
+        }));
         
-        return fileName;
-      });
-
-      // Attendre que tous les fichiers soient traités
-      const results = await Promise.all(processPromises);
-      const validFileNames = results.filter((name): name is string => name !== null);
+        generatedFileNames.push(fileName);
+      }
       
-      onFilesGenerated(validFileNames);
+      onFilesGenerated(generatedFileNames);
       toast({
         title: "Traitement terminé",
-        description: `${validFileNames.length} fichier(s) ont été générés avec succès.`,
+        description: `${generatedFileNames.length} fichier(s) ont été générés avec succès.`,
       });
     } catch (error) {
       console.error("Erreur lors du traitement:", error);
