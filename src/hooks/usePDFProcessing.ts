@@ -25,9 +25,10 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
       console.log("Début du traitement du PDF pour les pages:", selectedPages);
       const generatedFileNames: string[] = [];
       
-      for (const pageNumber of selectedPages) {
+      // Créer un tableau de promesses pour traiter tous les fichiers
+      const processPromises = selectedPages.map(async (pageNumber) => {
         const info = extractedInfos.find(info => info.pageNumber === pageNumber);
-        if (!info) continue;
+        if (!info) return null;
 
         console.log(`Traitement de la page ${pageNumber}`);
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
@@ -35,26 +36,20 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
         const fileName = `${info.referenceText} ${info.text} ${period}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        // Convertir le Blob en base64
-        const reader = new FileReader();
-        reader.readAsDataURL(splitPdf);
+        const url = URL.createObjectURL(splitPdf);
+        localStorage.setItem(fileName, url);
         
-        await new Promise((resolve, reject) => {
-          reader.onload = () => {
-            const base64data = reader.result as string;
-            localStorage.setItem(fileName, base64data);
-            resolve(base64data);
-          };
-          reader.onerror = reject;
-        });
-        
-        generatedFileNames.push(fileName);
-      }
+        return fileName;
+      });
+
+      // Attendre que tous les fichiers soient traités
+      const results = await Promise.all(processPromises);
+      const validFileNames = results.filter((name): name is string => name !== null);
       
-      onFilesGenerated(generatedFileNames);
+      onFilesGenerated(validFileNames);
       toast({
         title: "Traitement terminé",
-        description: `${generatedFileNames.length} fichier(s) ont été générés avec succès.`,
+        description: `${validFileNames.length} fichier(s) ont été générés avec succès.`,
       });
     } catch (error) {
       console.error("Erreur lors du traitement:", error);

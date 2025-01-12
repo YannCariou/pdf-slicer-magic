@@ -12,23 +12,31 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
 
   const downloadSingleFile = async (fileName: string) => {
     try {
-      console.log(`Téléchargement du fichier ${fileName}`);
-      const downloadUrl = localStorage.getItem(fileName);
+      console.log(`Tentative de téléchargement pour ${fileName}`);
+      const url = localStorage.getItem(fileName);
       
-      if (!downloadUrl) {
+      if (!url) {
         console.error(`URL non trouvée pour ${fileName}`);
         throw new Error("URL non trouvée");
       }
 
+      // Créer un élément blob à partir de l'URL
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+
+      // Créer et déclencher le téléchargement
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Nettoyer l'URL
+      URL.revokeObjectURL(downloadUrl);
       
-      console.log(`Fichier ${fileName} téléchargé avec succès`);
-      
+      console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
         title: "Téléchargement réussi",
         description: `Le fichier ${fileName} a été téléchargé.`,
@@ -51,9 +59,8 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
       try {
         await downloadSingleFile(fileName);
         successCount++;
-        // Petit délai entre chaque téléchargement
         if (successCount < files.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       } catch (error) {
         console.error(`Erreur lors du téléchargement de ${fileName}:`, error);
