@@ -35,11 +35,20 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
         const fileName = `${info.referenceText} ${info.text} ${period}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        const blob = new Blob([splitPdf], { type: 'application/pdf' });
-        const downloadUrl = URL.createObjectURL(blob);
+        // Convertir le Blob en base64
+        const reader = new FileReader();
+        reader.readAsDataURL(splitPdf);
+        
+        await new Promise((resolve, reject) => {
+          reader.onload = () => {
+            const base64data = reader.result as string;
+            localStorage.setItem(fileName, base64data);
+            resolve(base64data);
+          };
+          reader.onerror = reject;
+        });
         
         generatedFileNames.push(fileName);
-        localStorage.setItem(fileName, downloadUrl);
       }
       
       onFilesGenerated(generatedFileNames);
