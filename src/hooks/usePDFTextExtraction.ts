@@ -21,7 +21,7 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
           info.pageNumber === pageNumber 
             ? { 
                 ...info, 
-                referenceText: text, // Le nouveau texte devient la référence
+                referenceText: text,
                 position 
               } 
             : info
@@ -29,10 +29,10 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
       }
       return [...prev, { pageNumber, text, position }];
     });
-    return { text, position };
   };
 
   const extractAllTexts = async (totalPages: number, position: { x: number; y: number }) => {
+    console.log("Starting text extraction for all pages with position:", position);
     const texts: { [pageNumber: number]: string } = {};
     
     for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
@@ -40,7 +40,21 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
       try {
         const text = await extractTextFromPosition(selectedFile!, position, pageNumber);
         texts[pageNumber] = text;
-        console.log(`Found text at position for page ${pageNumber}: "${text}"`);
+        
+        // Mettre à jour extractedInfos avec les nouvelles informations
+        setExtractedInfos(prev => {
+          const exists = prev.some(info => info.pageNumber === pageNumber);
+          if (!exists) {
+            return [...prev, { 
+              pageNumber, 
+              text,
+              position 
+            }];
+          }
+          return prev;
+        });
+        
+        console.log(`Found text for page ${pageNumber}:`, text);
       } catch (error) {
         console.error(`Error extracting text from page ${pageNumber}:`, error);
         texts[pageNumber] = '';

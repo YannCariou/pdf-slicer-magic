@@ -50,7 +50,6 @@ const PDFProcessingForm = ({
       const totalPages = pdfDoc.getPageCount();
       console.log(`Nombre total de pages : ${totalPages}`);
       
-      // Extraction des textes avec une tolérance de position plus stricte
       console.log("Extraction des textes pour toutes les pages");
       const targetTexts = await extractAllTexts(totalPages, selectedTextInfo.position);
       const referenceTexts = await extractAllTexts(totalPages, referenceTextInfo.position);
@@ -66,9 +65,9 @@ const PDFProcessingForm = ({
         
         const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
         
-        // Utilisation du texte de référence pour le nom du fichier s'il est disponible
-        const fileName = referenceText 
-          ? `${referenceText.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-_.]/g, '_')}.pdf`
+        // Utiliser le texte cible pour le nom du fichier, avec fallback sur le numéro de page
+        const fileName = targetText 
+          ? `${targetText.trim().replace(/[^a-zA-ZÀ-ÿ0-9\s-_.]/g, '_')}.pdf`
           : `page_${pageNumber}.pdf`;
         
         console.log(`Nom de fichier généré : ${fileName}`);
