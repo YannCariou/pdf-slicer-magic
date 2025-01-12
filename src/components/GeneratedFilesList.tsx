@@ -10,30 +10,40 @@ interface GeneratedFilesListProps {
 const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
   const { toast } = useToast();
 
-  const handleDownload = async (fileName: string) => {
+  const handleDownloadAll = async () => {
     try {
-      const downloadUrl = localStorage.getItem(fileName);
-      if (!downloadUrl) {
-        throw new Error("URL not found");
-      }
+      console.log("Début du téléchargement groupé");
+      
+      for (const fileName of files) {
+        const downloadUrl = localStorage.getItem(fileName);
+        if (!downloadUrl) {
+          console.error(`URL non trouvée pour ${fileName}`);
+          continue;
+        }
 
-      // Créer un lien temporaire pour le téléchargement
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName; // Définit le nom du fichier pour le téléchargement
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        // Créer un lien temporaire pour le téléchargement
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log(`Fichier ${fileName} téléchargé`);
+        
+        // Petite pause entre chaque téléchargement pour éviter les problèmes de navigateur
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
 
       toast({
         title: "Téléchargement réussi",
-        description: `Le fichier ${fileName} a été téléchargé.`,
+        description: `${files.length} fichier(s) ont été téléchargés.`,
       });
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de télécharger le fichier.",
+        description: "Impossible de télécharger les fichiers.",
         variant: "destructive",
       });
     }
@@ -52,17 +62,21 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
               <FileText className="w-5 h-5 text-gray-500" />
               <span>{file}</span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDownload(file)}
-              className="text-primary hover:text-primary-hover transition-colors"
-            >
-              <Download className="w-5 h-5" />
-            </Button>
           </div>
         ))}
       </div>
+      
+      {files.length > 0 && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleDownloadAll}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-5 h-5" />
+            Télécharger la sélection ({files.length} fichier{files.length > 1 ? 's' : ''})
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
