@@ -22,6 +22,8 @@ interface ExtractedInfoTableProps {
 }
 
 const ExtractedInfoTable = ({ extractedInfos, onValidate }: ExtractedInfoTableProps) => {
+  console.log("Rendering table with extracted infos:", extractedInfos);
+  
   return (
     <div className="w-full space-y-4">
       <Table>

@@ -4,6 +4,7 @@ import { extractTextFromPosition } from "@/services/pdfService";
 interface ExtractedInfo {
   pageNumber: number;
   text: string;
+  referenceText?: string;
   position: { x: number; y: number };
 }
 
@@ -11,12 +12,19 @@ export const usePDFTextExtraction = (selectedFile: File | null) => {
   const [extractedInfos, setExtractedInfos] = useState<ExtractedInfo[]>([]);
 
   const handleTextSelect = (text: string, position: { x: number; y: number }, pageNumber: number) => {
+    console.log(`Handling text selection for page ${pageNumber}:`, text);
+    
     setExtractedInfos(prev => {
       const exists = prev.some(info => info.pageNumber === pageNumber);
       if (exists) {
         return prev.map(info => 
           info.pageNumber === pageNumber 
-            ? { ...info, text, position } 
+            ? { 
+                ...info, 
+                referenceText: info.text, // L'ancien texte devient la référence
+                text, // Le nouveau texte devient la cible
+                position 
+              } 
             : info
         );
       }
