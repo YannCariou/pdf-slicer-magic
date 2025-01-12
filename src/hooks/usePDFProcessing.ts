@@ -35,10 +35,11 @@ export const usePDFProcessing = (selectedFile: File, onFilesGenerated: (files: s
         const fileName = `${info.referenceText} ${info.text} ${period}.pdf`;
         console.log(`Nom de fichier généré : ${fileName}`);
         
-        // Stocker directement le blob
+        // Stocker le blob directement
+        const blobData = await splitPdf.arrayBuffer();
         localStorage.setItem(fileName, JSON.stringify({
-          type: splitPdf.type,
-          data: Array.from(new Uint8Array(await splitPdf.arrayBuffer()))
+          type: 'application/pdf',
+          data: Array.from(new Uint8Array(blobData))
         }));
         
         generatedFileNames.push(fileName);

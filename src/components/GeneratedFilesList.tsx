@@ -23,18 +23,15 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
       // Reconstruire le blob à partir des données stockées
       const { type, data } = JSON.parse(storedData);
       const blob = new Blob([new Uint8Array(data)], { type });
-      const downloadUrl = URL.createObjectURL(blob);
 
       // Créer et déclencher le téléchargement
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = URL.createObjectURL(blob);
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Nettoyer l'URL
-      URL.revokeObjectURL(downloadUrl);
+      URL.revokeObjectURL(link.href);
       
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -60,7 +57,7 @@ const GeneratedFilesList = ({ files, onDownload }: GeneratedFilesListProps) => {
         await downloadSingleFile(fileName);
         successCount++;
         if (successCount < files.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       } catch (error) {
         console.error(`Erreur lors du téléchargement de ${fileName}:`, error);
