@@ -9,29 +9,37 @@ export const useZipDownload = (month?: string, year?: string) => {
   const downloadSingleFile = async (fileName: string) => {
     try {
       console.log(`Début du téléchargement de ${fileName}`);
-      const downloadUrl = localStorage.getItem(fileName);
+      const dataUrl = localStorage.getItem(fileName);
       
-      if (!downloadUrl) {
+      if (!dataUrl) {
         console.error(`URL not found for file: ${fileName}`);
         throw new Error("URL not found");
       }
 
-      // Créer un blob à partir de l'URL data
-      const response = await fetch(downloadUrl);
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
       const blob = await response.blob();
       
-      // Créer une URL pour le blob
-      const blobUrl = window.URL.createObjectURL(blob);
+      if (blob.size === 0) {
+        console.error(`Empty blob for file: ${fileName}`);
+        throw new Error("Empty file");
+      }
+
+      console.log(`Blob created for ${fileName}, size: ${blob.size} bytes`);
+      
+      const downloadUrl = window.URL.createObjectURL(blob);
+      console.log(`Download URL created: ${downloadUrl}`);
       
       const link = document.createElement('a');
-      link.href = blobUrl;
+      link.href = downloadUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // Nettoyer l'URL du blob
-      window.URL.revokeObjectURL(blobUrl);
+      // Cleanup
+      window.URL.revokeObjectURL(downloadUrl);
+      console.log(`Download URL revoked for ${fileName}`);
 
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -57,14 +65,14 @@ export const useZipDownload = (month?: string, year?: string) => {
       let hasFiles = false;
       
       for (const fileName of files) {
-        const downloadUrl = localStorage.getItem(fileName);
-        if (!downloadUrl) {
+        const dataUrl = localStorage.getItem(fileName);
+        if (!dataUrl) {
           console.error(`URL not found for ${fileName}`);
           continue;
         }
         
         try {
-          const response = await fetch(downloadUrl);
+          const response = await fetch(dataUrl);
           if (!response.ok) {
             console.error(`Failed to fetch ${fileName}`);
             continue;
@@ -76,9 +84,9 @@ export const useZipDownload = (month?: string, year?: string) => {
             continue;
           }
           
+          console.log(`Adding ${fileName} to ZIP, blob size: ${pdfBlob.size} bytes`);
           zip.file(fileName, pdfBlob);
           hasFiles = true;
-          console.log(`Fichier ${fileName} ajouté au ZIP avec succès, taille: ${pdfBlob.size} bytes`);
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
         }
@@ -97,6 +105,8 @@ export const useZipDownload = (month?: string, year?: string) => {
       }
       
       const zipUrl = URL.createObjectURL(zipBlob);
+      console.log(`ZIP URL created: ${zipUrl}`);
+      
       const link = document.createElement('a');
       link.href = zipUrl;
       const zipFileName = `BP_20${year}${month}.zip`;
@@ -105,7 +115,10 @@ export const useZipDownload = (month?: string, year?: string) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Cleanup
       URL.revokeObjectURL(zipUrl);
+      console.log("ZIP URL revoked");
 
       toast({
         title: "Téléchargement réussi",
