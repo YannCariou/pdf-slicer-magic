@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 import { useToast } from './use-toast';
 
@@ -16,19 +17,18 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      // Créer un blob à partir du dataURL
-      const response = fetch(dataUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-        });
+      // Convertir le dataURL en Blob
+      const byteString = atob(dataUrl.split(',')[1]);
+      const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      
+      const blob = new Blob([ab], { type: mimeString });
+      saveAs(blob, fileName);
 
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -62,8 +62,16 @@ export const useZipDownload = (month?: string, year?: string) => {
 
         try {
           console.log(`Processing ${fileName}`);
-          const response = await fetch(dataUrl);
-          const blob = await response.blob();
+          // Convertir le dataURL en Blob
+          const byteString = atob(dataUrl.split(',')[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          
+          const blob = new Blob([ab], { type: 'application/pdf' });
           zip.file(fileName, blob);
           hasFiles = true;
           console.log(`${fileName} ajouté au ZIP avec succès`);
@@ -85,17 +93,9 @@ export const useZipDownload = (month?: string, year?: string) => {
         }
       });
 
-      const zipUrl = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = zipUrl;
       const zipFileName = `BP_20${year}${month}.zip`;
       console.log(`Nom du fichier ZIP: ${zipFileName}`);
-      link.download = zipFileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      URL.revokeObjectURL(zipUrl);
+      saveAs(content, zipFileName);
 
       toast({
         title: "Téléchargement réussi",
