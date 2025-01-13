@@ -16,31 +16,14 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      // Créer un blob à partir du dataURL
-      const base64Data = dataUrl.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
+      console.log(`DataURL trouvée pour ${fileName}`);
       
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-      
-      const downloadUrl = URL.createObjectURL(blob);
-      console.log(`Download URL created: ${downloadUrl}`);
-
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = dataUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Nettoyer l'URL
-      URL.revokeObjectURL(downloadUrl);
-      console.log(`Download URL revoked for ${fileName}`);
 
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -75,17 +58,7 @@ export const useZipDownload = (month?: string, year?: string) => {
         try {
           console.log(`Processing ${fileName}`);
           const base64Data = dataUrl.split(',')[1];
-          const byteCharacters = atob(base64Data);
-          const byteNumbers = new Array(byteCharacters.length);
-          
-          for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-          }
-          
-          const byteArray = new Uint8Array(byteNumbers);
-          const blob = new Blob([byteArray], { type: 'application/pdf' });
-          
-          zip.file(fileName, blob);
+          zip.file(fileName, base64Data, { base64: true });
           hasFiles = true;
           console.log(`${fileName} ajouté au ZIP avec succès`);
         } catch (error) {
@@ -106,14 +79,7 @@ export const useZipDownload = (month?: string, year?: string) => {
         }
       });
 
-      if (content.size === 0) {
-        throw new Error("Le fichier ZIP généré est vide");
-      }
-
-      console.log(`ZIP généré avec succès, taille: ${content.size} bytes`);
       const zipUrl = URL.createObjectURL(content);
-      console.log(`ZIP URL created: ${zipUrl}`);
-
       const link = document.createElement('a');
       link.href = zipUrl;
       const zipFileName = `BP_20${year}${month}.zip`;
@@ -124,7 +90,6 @@ export const useZipDownload = (month?: string, year?: string) => {
       document.body.removeChild(link);
 
       URL.revokeObjectURL(zipUrl);
-      console.log("ZIP URL revoked");
 
       toast({
         title: "Téléchargement réussi",
