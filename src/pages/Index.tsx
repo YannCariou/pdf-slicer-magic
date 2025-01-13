@@ -24,9 +24,6 @@ const Index = () => {
           <p className="text-sm text-gray-500">
             par YC pour Inetum Software (01/2025)
           </p>
-          <p className="text-gray-600 mt-4">
-            Sélectionnez le texte qui servira de modèle pour découper votre PDF
-          </p>
         </header>
 
         <PDFDropZone onFileSelect={setSelectedFile} />
