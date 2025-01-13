@@ -11,23 +11,13 @@ interface GeneratedFilesListProps {
 const GeneratedFilesList = ({ files, month, year }: GeneratedFilesListProps) => {
   const { downloadSingleFile, downloadAllFiles, isDownloading } = useZipDownload(month, year);
 
-  const handleSingleDownload = async (fileName: string) => {
-    console.log("Attempting to download single file:", fileName);
-    await downloadSingleFile(fileName);
-  };
-
-  const handleBulkDownload = async () => {
-    console.log("Attempting to download all files:", files);
-    await downloadAllFiles(files);
-  };
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Fichiers générés</h2>
         {files.length > 0 && (
           <Button
-            onClick={handleBulkDownload}
+            onClick={() => downloadAllFiles(files)}
             className="flex items-center gap-2"
             variant="outline"
             disabled={isDownloading}
@@ -50,7 +40,7 @@ const GeneratedFilesList = ({ files, month, year }: GeneratedFilesListProps) => 
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => handleSingleDownload(file)}
+              onClick={() => downloadSingleFile(file)}
               className="text-primary hover:text-primary-hover transition-colors"
               disabled={isDownloading}
             >
