@@ -16,28 +16,13 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-      
-      if (blob.size === 0) {
-        console.error(`Empty blob for file: ${fileName}`);
-        throw new Error("Empty file");
-      }
-
-      console.log(`Blob created for ${fileName}, size: ${blob.size} bytes`);
-      
-      const downloadUrl = window.URL.createObjectURL(blob);
-      console.log(`Download URL created: ${downloadUrl}`);
-      
+      // Créer un lien temporaire pour le téléchargement
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = dataUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      window.URL.revokeObjectURL(downloadUrl);
-      console.log(`Download URL revoked for ${fileName}`);
 
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -61,36 +46,27 @@ export const useZipDownload = (month?: string, year?: string) => {
     try {
       const zip = new JSZip();
       let hasFiles = false;
-      
-      // Ajouter chaque fichier au ZIP
+
       for (const fileName of files) {
         const dataUrl = localStorage.getItem(fileName);
         if (!dataUrl) {
           console.error(`URL not found for ${fileName}`);
           continue;
         }
-        
+
         try {
-          const response = await fetch(dataUrl);
-          const pdfBlob = await response.blob();
-          
-          if (pdfBlob.size === 0) {
-            console.error(`Empty PDF blob for ${fileName}`);
-            continue;
-          }
-          
-          console.log(`Adding ${fileName} to ZIP, blob size: ${pdfBlob.size} bytes`);
-          await zip.file(fileName, pdfBlob);
+          console.log(`Processing ${fileName}`);
+          zip.file(fileName, dataUrl.split(',')[1], {base64: true});
           hasFiles = true;
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
         }
       }
-      
+
       if (!hasFiles) {
         throw new Error("Aucun fichier n'a pu être ajouté au ZIP");
       }
-      
+
       console.log("Génération du ZIP...");
       const zipBlob = await zip.generateAsync({
         type: "blob",
@@ -99,15 +75,15 @@ export const useZipDownload = (month?: string, year?: string) => {
           level: 6
         }
       });
-      
+
       if (zipBlob.size === 0) {
         throw new Error("Le fichier ZIP généré est vide");
       }
-      
+
       console.log(`ZIP généré avec succès, taille: ${zipBlob.size} bytes`);
       const zipUrl = URL.createObjectURL(zipBlob);
       console.log(`ZIP URL created: ${zipUrl}`);
-      
+
       const link = document.createElement('a');
       link.href = zipUrl;
       const zipFileName = `BP_20${year}${month}.zip`;
@@ -116,7 +92,7 @@ export const useZipDownload = (month?: string, year?: string) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       URL.revokeObjectURL(zipUrl);
       console.log("ZIP URL revoked");
 
