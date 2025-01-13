@@ -10,17 +10,30 @@ export const useZipDownload = (month?: string, year?: string) => {
     try {
       console.log(`Début du téléchargement de ${fileName}`);
       const downloadUrl = localStorage.getItem(fileName);
+      
       if (!downloadUrl) {
+        console.error(`URL not found for file: ${fileName}`);
         throw new Error("URL not found");
       }
 
+      // Créer un blob à partir de l'URL data
+      const response = await fetch(downloadUrl);
+      const blob = await response.blob();
+      
+      // Créer une URL pour le blob
+      const blobUrl = window.URL.createObjectURL(blob);
+      
       const link = document.createElement('a');
-      link.href = downloadUrl;
+      link.href = blobUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Nettoyer l'URL du blob
+      window.URL.revokeObjectURL(blobUrl);
 
+      console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
         title: "Téléchargement réussi",
         description: `Le fichier ${fileName} a été téléchargé.`,
@@ -86,7 +99,6 @@ export const useZipDownload = (month?: string, year?: string) => {
       const zipUrl = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = zipUrl;
-      // Nouveau format de nom pour le fichier ZIP : BP_AAAAMM.zip
       const zipFileName = `BP_20${year}${month}.zip`;
       console.log(`Nom du fichier ZIP: ${zipFileName}`);
       link.download = zipFileName;
