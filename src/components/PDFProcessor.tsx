@@ -39,33 +39,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   
   const { 
     extractedInfos, 
-    extractAllTexts,
-    resetExtraction 
+    extractAllTexts 
   } = usePDFTextExtraction(selectedFile);
-
-  const resetState = () => {
-    console.log("Réinitialisation de l'état...");
-    setShowTable(false);
-    setCurrentMonth("");
-    setCurrentYear("");
-    setGeneratedFiles([]);
-    form.reset();
-    resetExtraction();
-    
-    // Vider le localStorage des fichiers PDF
-    generatedFiles.forEach(fileName => {
-      const url = localStorage.getItem(fileName);
-      if (url) {
-        URL.revokeObjectURL(url);
-        localStorage.removeItem(fileName);
-      }
-    });
-    
-    toast({
-      title: "Réinitialisation",
-      description: "L'application a été réinitialisée avec succès.",
-    });
-  };
 
   const handleDownloadSingleFile = (fileName: string) => {
     const url = localStorage.getItem(fileName);
@@ -163,7 +138,6 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   const handleDownloadAll = () => {
     if (generatedFiles.length > 0) {
       generatedFiles.forEach(file => handleDownloadSingleFile(file));
-      resetState();
     }
   };
 

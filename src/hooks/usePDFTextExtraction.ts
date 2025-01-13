@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import * as pdfjs from 'pdfjs-dist';
+import { useState } from "react";
+import { findTextAfterReference } from "@/services/pdfService";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -7,49 +7,63 @@ interface ExtractedInfo {
   referenceText?: string;
 }
 
-export const usePDFTextExtraction = (file: File) => {
+export const usePDFTextExtraction = (selectedFile: File | null) => {
   const [extractedInfos, setExtractedInfos] = useState<ExtractedInfo[]>([]);
-
+  
   const extractAllTexts = async (totalPages: number) => {
-    console.log("Début de l'extraction de toutes les pages");
-    const newExtractedInfos: ExtractedInfo[] = [];
+    console.log("Starting text extraction for all pages");
+    const texts: { [pageNumber: number]: string } = {};
     
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      
-      for (let i = 1; i <= totalPages; i++) {
-        console.log(`Extraction de la page ${i}`);
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        
-        // Simulation d'extraction - à remplacer par la vraie logique d'extraction
-        const matricule = `MAT${String(i).padStart(3, '0')}`;
-        const nomPrenom = `NOM${String(i).padStart(3, '0')}`;
-        
-        newExtractedInfos.push({
-          pageNumber: i,
-          text: matricule,
-          referenceText: nomPrenom
-        });
-      }
-      
-      setExtractedInfos(newExtractedInfos);
-      console.log("Extraction terminée avec succès");
-    } catch (error) {
-      console.error("Erreur lors de l'extraction:", error);
-      throw error;
+    if (!selectedFile) {
+      console.error("No file selected");
+      return texts;
     }
-  };
-
-  const resetExtraction = () => {
-    console.log("Réinitialisation de l'extraction");
-    setExtractedInfos([]);
+    
+    for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+      try {
+        // Extraire le matricule (après "Matricule")
+        const matriculeResult = await findTextAfterReference(selectedFile, "Matricule", pageNumber);
+        // Extraire le nom (après "Nom(s) & Prénom(s)")
+        const nomResult = await findTextAfterReference(selectedFile, "Nom(s) & Prénom(s)", pageNumber);
+        
+        // Mettre à jour les informations extraites
+        setExtractedInfos(prev => {
+          const existingInfo = prev.find(info => info.pageNumber === pageNumber);
+          if (existingInfo) {
+            return prev.map(info => 
+              info.pageNumber === pageNumber 
+                ? {
+                    ...info,
+                    text: matriculeResult.text,
+                    referenceText: nomResult.text
+                  }
+                : info
+            );
+          } else {
+            return [...prev, {
+              pageNumber,
+              text: matriculeResult.text,
+              referenceText: nomResult.text
+            }];
+          }
+        });
+        
+        texts[pageNumber] = matriculeResult.text;
+        console.log(`Extracted for page ${pageNumber}:`, {
+          matricule: matriculeResult.text,
+          nom: nomResult.text
+        });
+      } catch (error) {
+        console.error(`Error extracting text from page ${pageNumber}:`, error);
+        texts[pageNumber] = '';
+      }
+    }
+    
+    return texts;
   };
 
   return {
     extractedInfos,
-    extractAllTexts,
-    resetExtraction
+    extractAllTexts
   };
 };
