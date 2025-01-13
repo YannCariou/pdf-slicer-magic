@@ -16,7 +16,6 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      // Convert data URL to blob
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       
@@ -37,7 +36,6 @@ export const useZipDownload = (month?: string, year?: string) => {
       link.click();
       document.body.removeChild(link);
       
-      // Cleanup
       window.URL.revokeObjectURL(downloadUrl);
       console.log(`Download URL revoked for ${fileName}`);
 
@@ -64,6 +62,7 @@ export const useZipDownload = (month?: string, year?: string) => {
       const zip = new JSZip();
       let hasFiles = false;
       
+      // Ajouter chaque fichier au ZIP
       for (const fileName of files) {
         const dataUrl = localStorage.getItem(fileName);
         if (!dataUrl) {
@@ -73,19 +72,15 @@ export const useZipDownload = (month?: string, year?: string) => {
         
         try {
           const response = await fetch(dataUrl);
-          if (!response.ok) {
-            console.error(`Failed to fetch ${fileName}`);
-            continue;
-          }
-          
           const pdfBlob = await response.blob();
+          
           if (pdfBlob.size === 0) {
             console.error(`Empty PDF blob for ${fileName}`);
             continue;
           }
           
           console.log(`Adding ${fileName} to ZIP, blob size: ${pdfBlob.size} bytes`);
-          zip.file(fileName, pdfBlob);
+          await zip.file(fileName, pdfBlob);
           hasFiles = true;
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
@@ -97,13 +92,19 @@ export const useZipDownload = (month?: string, year?: string) => {
       }
       
       console.log("Génération du ZIP...");
-      const zipBlob = await zip.generateAsync({type: "blob"});
-      console.log(`ZIP généré avec succès, taille: ${zipBlob.size} bytes`);
+      const zipBlob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 6
+        }
+      });
       
       if (zipBlob.size === 0) {
         throw new Error("Le fichier ZIP généré est vide");
       }
       
+      console.log(`ZIP généré avec succès, taille: ${zipBlob.size} bytes`);
       const zipUrl = URL.createObjectURL(zipBlob);
       console.log(`ZIP URL created: ${zipUrl}`);
       
@@ -116,7 +117,6 @@ export const useZipDownload = (month?: string, year?: string) => {
       link.click();
       document.body.removeChild(link);
       
-      // Cleanup
       URL.revokeObjectURL(zipUrl);
       console.log("ZIP URL revoked");
 
