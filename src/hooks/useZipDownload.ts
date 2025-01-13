@@ -16,13 +16,28 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      // Créer un lien temporaire pour le téléchargement
+      // Convertir le dataURL en Blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      
+      if (blob.size === 0) {
+        console.error(`Empty blob for file: ${fileName}`);
+        throw new Error("Empty file");
+      }
+
+      const downloadUrl = URL.createObjectURL(blob);
+      console.log(`Download URL created: ${downloadUrl}`);
+
       const link = document.createElement('a');
-      link.href = dataUrl;
+      link.href = downloadUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Nettoyer l'URL
+      URL.revokeObjectURL(downloadUrl);
+      console.log(`Download URL revoked for ${fileName}`);
 
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -56,7 +71,16 @@ export const useZipDownload = (month?: string, year?: string) => {
 
         try {
           console.log(`Processing ${fileName}`);
-          zip.file(fileName, dataUrl.split(',')[1], {base64: true});
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          
+          if (blob.size === 0) {
+            console.error(`Empty blob for ${fileName}`);
+            continue;
+          }
+
+          console.log(`Adding ${fileName} to ZIP, size: ${blob.size} bytes`);
+          zip.file(fileName, blob);
           hasFiles = true;
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
@@ -98,7 +122,7 @@ export const useZipDownload = (month?: string, year?: string) => {
 
       toast({
         title: "Téléchargement réussi",
-        description: "Tous les fichiers ont été téléchargés dans un ZIP.",
+        description: "L'archive ZIP a été téléchargée avec succès.",
       });
     } catch (error) {
       console.error('Erreur lors de la création du ZIP:', error);
