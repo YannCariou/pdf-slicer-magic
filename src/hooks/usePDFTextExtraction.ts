@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PDFDocument } from 'pdf-lib';
+import * as pdfjs from 'pdfjs-dist';
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -15,12 +15,13 @@ export const usePDFTextExtraction = (file: File) => {
     const newExtractedInfos: ExtractedInfo[] = [];
     
     try {
-      const pdfBytes = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       
       for (let i = 1; i <= totalPages; i++) {
-        const page = pdfDoc.getPage(i - 1);
-        const text = await page.getTextContent();
+        console.log(`Extraction de la page ${i}`);
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
         
         // Simulation d'extraction - à remplacer par la vraie logique d'extraction
         const matricule = `MAT${String(i).padStart(3, '0')}`;
