@@ -21,7 +21,10 @@ const Index = () => {
       <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
         <header className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-[#1E293B]">Découpe PDF</h1>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-500">
+            par YC pour Inetum Software (01/2025)
+          </p>
+          <p className="text-gray-600 mt-4">
             Sélectionnez le texte qui servira de modèle pour découper votre PDF
           </p>
         </header>
