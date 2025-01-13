@@ -16,14 +16,19 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      console.log(`DataURL trouvée pour ${fileName}`);
-      
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Créer un blob à partir du dataURL
+      const response = fetch(dataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        });
 
       console.log(`Téléchargement réussi pour ${fileName}`);
       toast({
@@ -57,8 +62,9 @@ export const useZipDownload = (month?: string, year?: string) => {
 
         try {
           console.log(`Processing ${fileName}`);
-          const base64Data = dataUrl.split(',')[1];
-          zip.file(fileName, base64Data, { base64: true });
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          zip.file(fileName, blob);
           hasFiles = true;
           console.log(`${fileName} ajouté au ZIP avec succès`);
         } catch (error) {
