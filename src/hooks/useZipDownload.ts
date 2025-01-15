@@ -46,13 +46,14 @@ export const useZipDownload = (month?: string, year?: string) => {
   };
 
   const downloadAllFiles = async (files: string[]) => {
-    console.log("Début de la création du ZIP");
+    console.log("Début de la création du ZIP avec", files.length, "fichiers");
     setIsDownloading(true);
     
     try {
       const zip = new JSZip();
       let hasFiles = false;
 
+      // Traiter tous les fichiers de manière séquentielle
       for (const fileName of files) {
         const dataUrl = localStorage.getItem(fileName);
         if (!dataUrl) {
@@ -62,17 +63,11 @@ export const useZipDownload = (month?: string, year?: string) => {
 
         try {
           console.log(`Processing ${fileName}`);
-          // Convertir le dataURL en Blob
-          const byteString = atob(dataUrl.split(',')[1]);
-          const ab = new ArrayBuffer(byteString.length);
-          const ia = new Uint8Array(ab);
           
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-          }
+          // Extraire la partie base64 du dataURL
+          const base64Data = dataUrl.split(',')[1];
+          zip.file(fileName, base64Data, { base64: true });
           
-          const blob = new Blob([ab], { type: 'application/pdf' });
-          zip.file(fileName, blob);
           hasFiles = true;
           console.log(`${fileName} ajouté au ZIP avec succès`);
         } catch (error) {
