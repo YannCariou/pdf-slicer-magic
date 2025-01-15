@@ -64,9 +64,17 @@ export const useZipDownload = (month?: string, year?: string) => {
         try {
           console.log(`Processing ${fileName}`);
           
-          // Extraire la partie base64 du dataURL
-          const base64Data = dataUrl.split(',')[1];
-          zip.file(fileName, base64Data, { base64: true });
+          // Convertir le dataURL en binaire pour le PDF
+          const byteString = atob(dataUrl.split(',')[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          
+          // Ajouter le fichier au ZIP avec le bon type MIME
+          zip.file(fileName, ia, { binary: true });
           
           hasFiles = true;
           console.log(`${fileName} ajouté au ZIP avec succès`);
