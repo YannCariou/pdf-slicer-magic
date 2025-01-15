@@ -17,24 +17,19 @@ export const useZipDownload = (month?: string, year?: string) => {
         throw new Error("URL not found");
       }
 
-      // Convertir le dataURL en Blob
-      const byteString = atob(dataUrl.split(',')[1]);
-      const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([ab], { type: mimeString });
-      saveAs(blob, fileName);
-
-      console.log(`Téléchargement réussi pour ${fileName}`);
-      toast({
-        title: "Téléchargement réussi",
-        description: `Le fichier ${fileName} a été téléchargé.`,
-      });
+      fetch(dataUrl)
+        .then(response => response.blob())
+        .then(blob => {
+          saveAs(blob, fileName);
+          console.log(`Téléchargement réussi pour ${fileName}`);
+          toast({
+            title: "Téléchargement réussi",
+            description: `Le fichier ${fileName} a été téléchargé.`,
+          });
+        })
+        .catch(error => {
+          throw error;
+        });
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
       toast({
@@ -53,35 +48,28 @@ export const useZipDownload = (month?: string, year?: string) => {
       const zip = new JSZip();
       let hasFiles = false;
 
-      // Traiter tous les fichiers de manière séquentielle
-      for (const fileName of files) {
+      // Créer un tableau de promesses pour tous les fichiers
+      const filePromises = files.map(async (fileName) => {
         const dataUrl = localStorage.getItem(fileName);
         if (!dataUrl) {
           console.error(`URL not found for ${fileName}`);
-          continue;
+          return;
         }
 
         try {
           console.log(`Processing ${fileName}`);
-          
-          // Convertir le dataURL en binaire pour le PDF
-          const byteString = atob(dataUrl.split(',')[1]);
-          const ab = new ArrayBuffer(byteString.length);
-          const ia = new Uint8Array(ab);
-          
-          for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-          }
-          
-          // Ajouter le fichier au ZIP avec le bon type MIME
-          zip.file(fileName, ia, { binary: true });
-          
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          zip.file(fileName, blob);
           hasFiles = true;
           console.log(`${fileName} ajouté au ZIP avec succès`);
         } catch (error) {
           console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
         }
-      }
+      });
+
+      // Attendre que tous les fichiers soient traités
+      await Promise.all(filePromises);
 
       if (!hasFiles) {
         throw new Error("Aucun fichier n'a pu être ajouté au ZIP");
