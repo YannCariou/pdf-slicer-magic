@@ -59,6 +59,7 @@ const ExtractedInfoTable = ({
   };
   
   const handleDownloadAll = () => {
+    console.log("Tentative de téléchargement ZIP avec", generatedFiles.length, "fichiers");
     if (onDownloadAll) {
       onDownloadAll();
     } else {
@@ -89,7 +90,7 @@ const ExtractedInfoTable = ({
             disabled={isProcessing || isDownloading}
           >
             <Download className="w-4 h-4" />
-            {isDownloading ? "Création du ZIP..." : "Télécharger en ZIP"}
+            {isDownloading ? "Création du ZIP..." : `Télécharger en ZIP (${generatedFiles.length} fichiers)`}
           </Button>
         )}
       </div>

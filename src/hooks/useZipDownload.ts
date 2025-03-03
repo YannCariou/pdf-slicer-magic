@@ -50,8 +50,8 @@ export const useZipDownload = (month?: string, year?: string) => {
       let hasFiles = false;
       let processedCount = 0;
 
-      // Traiter les fichiers par lots de 10 pour éviter les problèmes de mémoire
-      const batchSize = 10;
+      // Traiter les fichiers par lots plus petits pour éviter les problèmes de mémoire
+      const batchSize = 5;
       const totalFiles = files.length;
       
       for (let i = 0; i < totalFiles; i += batchSize) {
@@ -66,38 +66,49 @@ export const useZipDownload = (month?: string, year?: string) => {
           }
 
           try {
-            console.log(`Processing ${fileName}`);
+            console.log(`Processing ${fileName} (${processedCount + 1}/${totalFiles})`);
             const response = await fetch(dataUrl);
+            
+            if (!response.ok) {
+              throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            
             const blob = await response.blob();
             zip.file(fileName, blob);
             hasFiles = true;
             processedCount++;
-            console.log(`${fileName} ajouté au ZIP avec succès (${processedCount}/${totalFiles})`);
+            console.log(`${fileName} ajouté au ZIP avec succès`);
           } catch (error) {
             console.error(`Erreur lors de l'ajout de ${fileName} au ZIP:`, error);
           }
         }
         
         // Petite pause entre les lots pour permettre au navigateur de respirer
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
       if (!hasFiles) {
         throw new Error("Aucun fichier n'a pu être ajouté au ZIP");
       }
 
-      console.log("Génération du ZIP...");
+      // Construction du nom du fichier ZIP
+      const zipFileName = `BP_${year || '00'}${month || '00'}.zip`;
+      console.log(`Création du fichier ZIP: ${zipFileName}`);
+      
+      // Générer le ZIP avec options de compression optimisées
+      console.log("Génération du contenu ZIP...");
       const content = await zip.generateAsync({
         type: "blob",
         compression: "DEFLATE",
-        compressionOptions: {
-          level: 6
-        }
+        compressionOptions: { level: 5 }, // Niveau de compression légèrement réduit pour plus de rapidité
+        streamFiles: true // Activer le streaming pour améliorer les performances
       });
 
-      const zipFileName = `BP_20${year}${month}.zip`;
-      console.log(`Nom du fichier ZIP: ${zipFileName}`);
+      console.log(`Taille du ZIP généré: ${content.size} octets`);
+      
+      // Déclencher le téléchargement
       saveAs(content, zipFileName);
+      console.log("Téléchargement du ZIP déclenché");
 
       toast({
         title: "Téléchargement réussi",
