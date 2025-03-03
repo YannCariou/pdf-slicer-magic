@@ -5,8 +5,8 @@ import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 // Configuration Firebase
 // Utilisation d'une variable d'environnement pour la clé API (pour plus de sécurité)
 const firebaseConfig = {
-  // Clé API fournie par l'utilisateur
-  apiKey: "1:688016327649:web:6d422497196e3196af88a0",
+  // Clé API correcte pour Firebase
+  apiKey: "AIzaSyBzYO8qxx_FBl5-g73-mOZbvHOQqkXzRc8",
   authDomain: "pdf-slicer-magic.firebaseapp.com",
   projectId: "pdf-slicer-magic",
   storageBucket: "pdf-slicer-magic.appspot.com",
