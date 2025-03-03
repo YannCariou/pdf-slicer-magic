@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, Download, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useZipDownload } from "@/hooks/useZipDownload";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -27,6 +28,8 @@ interface ExtractedInfoTableProps {
   hasGeneratedFiles: boolean;
   isProcessing?: boolean;
   processingProgress?: number;
+  month?: string;
+  year?: string;
 }
 
 const ExtractedInfoTable = ({ 
@@ -37,10 +40,31 @@ const ExtractedInfoTable = ({
   onDownloadAll,
   hasGeneratedFiles,
   isProcessing = false,
-  processingProgress = 0
+  processingProgress = 0,
+  month = "",
+  year = ""
 }: ExtractedInfoTableProps) => {
   console.log("Rendering table with extracted infos:", extractedInfos);
   console.log("Generated files:", generatedFiles);
+  
+  // Utiliser le hook useZipDownload pour la création du ZIP
+  const { downloadSingleFile, downloadAllFiles, isDownloading } = useZipDownload(month, year);
+  
+  const handleDownloadSingle = (fileName: string) => {
+    if (onDownloadFile) {
+      onDownloadFile(fileName);
+    } else {
+      downloadSingleFile(fileName);
+    }
+  };
+  
+  const handleDownloadAll = () => {
+    if (onDownloadAll) {
+      onDownloadAll();
+    } else {
+      downloadAllFiles(generatedFiles);
+    }
+  };
   
   return (
     <div className="w-full space-y-4">
@@ -57,15 +81,15 @@ const ExtractedInfoTable = ({
           )}
           {isProcessing ? "Traitement en cours..." : "Valider et générer les fichiers"}
         </Button>
-        {hasGeneratedFiles && onDownloadAll && (
+        {hasGeneratedFiles && (
           <Button
-            onClick={onDownloadAll}
+            onClick={handleDownloadAll}
             className="flex items-center gap-2"
             variant="outline"
-            disabled={isProcessing}
+            disabled={isProcessing || isDownloading}
           >
             <Download className="w-4 h-4" />
-            Tout télécharger
+            {isDownloading ? "Création du ZIP..." : "Télécharger en ZIP"}
           </Button>
         )}
       </div>
@@ -101,12 +125,13 @@ const ExtractedInfoTable = ({
                   <TableCell>{info.referenceText || "Non extrait"}</TableCell>
                   <TableCell>{info.text}</TableCell>
                   <TableCell>
-                    {generatedFile && onDownloadFile && (
+                    {generatedFile && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onDownloadFile(generatedFile)}
+                        onClick={() => handleDownloadSingle(generatedFile)}
                         className="hover:text-primary"
+                        disabled={isDownloading}
                       >
                         <Download className="w-4 h-4" />
                       </Button>

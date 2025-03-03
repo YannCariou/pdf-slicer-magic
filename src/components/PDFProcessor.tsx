@@ -239,6 +239,8 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
                 hasGeneratedFiles={generatedFiles.length > 0}
                 isProcessing={isProcessing}
                 processingProgress={processingProgress}
+                month={currentMonth}
+                year={currentYear}
               />
             </div>
           )}
