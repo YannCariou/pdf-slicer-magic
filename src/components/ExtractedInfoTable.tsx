@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Check, Download, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -25,6 +26,7 @@ interface ExtractedInfoTableProps {
   onDownloadAll?: () => void;
   hasGeneratedFiles: boolean;
   isProcessing?: boolean;
+  processingProgress?: number;
 }
 
 const ExtractedInfoTable = ({ 
@@ -34,7 +36,8 @@ const ExtractedInfoTable = ({
   onDownloadFile,
   onDownloadAll,
   hasGeneratedFiles,
-  isProcessing = false
+  isProcessing = false,
+  processingProgress = 0
 }: ExtractedInfoTableProps) => {
   console.log("Rendering table with extracted infos:", extractedInfos);
   console.log("Generated files:", generatedFiles);
@@ -66,6 +69,16 @@ const ExtractedInfoTable = ({
           </Button>
         )}
       </div>
+
+      {isProcessing && (
+        <div className="mb-4 space-y-2">
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>Création des fichiers en cours...</span>
+            <span>{processingProgress}%</span>
+          </div>
+          <Progress value={processingProgress} className="h-2" />
+        </div>
+      )}
 
       <div className="overflow-auto max-h-[60vh]">
         <Table>

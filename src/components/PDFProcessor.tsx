@@ -30,6 +30,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   const [currentYear, setCurrentYear] = useState<string>("");
   const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState<number>(0);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,26 +57,40 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     }
   };
 
-  const processFileChunk = async (startPage: number, endPage: number, pdfDoc: PDFDocument, fileNames: string[]) => {
+  const processFileChunk = async (startPage: number, endPage: number, fileNames: string[]) => {
+    console.log(`Traitement des pages ${startPage} à ${endPage}`);
+    
     for (let pageNumber = startPage; pageNumber <= endPage; pageNumber++) {
       const info = extractedInfos.find(info => info.pageNumber === pageNumber);
       if (!info) continue;
 
       console.log(`Traitement de la page ${pageNumber}`);
-      const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
-      
-      // Format de nom de fichier : "Nom(s) & Prénom(s)_Matricule_AAAAMM.pdf"
-      const fileName = `${info.referenceText}_${info.text}_${currentYear}${currentMonth}.pdf`;
-      console.log(`Nom de fichier généré : ${fileName}`);
-      
-      const blob = new Blob([splitPdf], { type: 'application/pdf' });
-      const downloadUrl = URL.createObjectURL(blob);
-      
-      fileNames.push(fileName);
-      localStorage.setItem(fileName, downloadUrl);
+      try {
+        const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
+        
+        // Format de nom de fichier : "Nom(s) & Prénom(s)_Matricule_AAMM.pdf"
+        const fileName = `${info.referenceText}_${info.text}_${currentYear}${currentMonth}.pdf`;
+        console.log(`Nom de fichier généré : ${fileName}`);
+        
+        const blob = new Blob([splitPdf], { type: 'application/pdf' });
+        const downloadUrl = URL.createObjectURL(blob);
+        
+        fileNames.push(fileName);
+        localStorage.setItem(fileName, downloadUrl);
+        
+        // Mise à jour de la progression
+        const progress = Math.round((pageNumber / extractedInfos.length) * 100);
+        setProcessingProgress(progress);
+        
+        // Petite pause pour permettre au navigateur de respirer
+        await new Promise(resolve => setTimeout(resolve, 50));
+      } catch (error) {
+        console.error(`Erreur lors du traitement de la page ${pageNumber}:`, error);
+      }
     }
+    
     return fileNames;
-  }
+  };
 
   const handleTableValidation = async () => {
     if (extractedInfos.length === 0) {
@@ -89,13 +104,14 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
 
     try {
       setIsProcessing(true);
+      setProcessingProgress(0);
       console.log("Début du traitement du PDF");
-      const generatedFileNames: string[] = [];
-      const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
-      const totalPages = pdfDoc.getPageCount();
       
-      // Traitement par lots pour éviter les problèmes de performance
-      const chunkSize = 10;
+      const generatedFileNames: string[] = [];
+      const totalPages = extractedInfos.length;
+      
+      // Traitement par petits lots pour éviter les problèmes de mémoire
+      const chunkSize = 5; // Réduit à 5 pages par lot
       const chunks = Math.ceil(totalPages / chunkSize);
       
       for (let i = 0; i < chunks; i++) {
@@ -103,10 +119,12 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         const endPage = Math.min((i + 1) * chunkSize, totalPages);
         
         // Traiter ce lot de pages
-        await processFileChunk(startPage, endPage, pdfDoc, generatedFileNames);
+        await processFileChunk(startPage, endPage, generatedFileNames);
         
-        // Pause courte pour permettre au navigateur de respirer
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Libérer la mémoire après chaque lot
+        if (window.gc) {
+          window.gc();
+        }
       }
       
       setGeneratedFiles(generatedFileNames);
@@ -124,6 +142,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       });
     } finally {
       setIsProcessing(false);
+      setProcessingProgress(0);
     }
   };
 
@@ -219,6 +238,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
                 onDownloadAll={handleDownloadAll}
                 hasGeneratedFiles={generatedFiles.length > 0}
                 isProcessing={isProcessing}
+                processingProgress={processingProgress}
               />
             </div>
           )}
