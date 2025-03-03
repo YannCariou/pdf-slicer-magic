@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Table,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Check, Download } from "lucide-react";
+import { Check, Download, Loader2 } from "lucide-react";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -23,6 +24,7 @@ interface ExtractedInfoTableProps {
   onDownloadFile?: (fileName: string) => void;
   onDownloadAll?: () => void;
   hasGeneratedFiles: boolean;
+  isProcessing?: boolean;
 }
 
 const ExtractedInfoTable = ({ 
@@ -31,7 +33,8 @@ const ExtractedInfoTable = ({
   generatedFiles = [],
   onDownloadFile,
   onDownloadAll,
-  hasGeneratedFiles
+  hasGeneratedFiles,
+  isProcessing = false
 }: ExtractedInfoTableProps) => {
   console.log("Rendering table with extracted infos:", extractedInfos);
   console.log("Generated files:", generatedFiles);
@@ -42,16 +45,21 @@ const ExtractedInfoTable = ({
         <Button 
           onClick={onValidate}
           className="flex items-center gap-2"
-          disabled={hasGeneratedFiles}
+          disabled={hasGeneratedFiles || isProcessing}
         >
-          <Check className="w-4 h-4" />
-          Valider et générer les fichiers
+          {isProcessing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Check className="w-4 h-4" />
+          )}
+          {isProcessing ? "Traitement en cours..." : "Valider et générer les fichiers"}
         </Button>
         {hasGeneratedFiles && onDownloadAll && (
           <Button
             onClick={onDownloadAll}
             className="flex items-center gap-2"
             variant="outline"
+            disabled={isProcessing}
           >
             <Download className="w-4 h-4" />
             Tout télécharger
@@ -59,37 +67,44 @@ const ExtractedInfoTable = ({
         )}
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-16">N° Page</TableHead>
-            <TableHead>Nom(s) & Prénom(s)</TableHead>
-            <TableHead>Matricule</TableHead>
-            <TableHead className="w-24">Fichier</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {extractedInfos.map((info) => (
-            <TableRow key={info.pageNumber}>
-              <TableCell>{info.pageNumber}</TableCell>
-              <TableCell>{info.referenceText || "Non extrait"}</TableCell>
-              <TableCell>{info.text}</TableCell>
-              <TableCell>
-                {generatedFiles[info.pageNumber - 1] && onDownloadFile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDownloadFile(generatedFiles[info.pageNumber - 1])}
-                    className="hover:text-primary"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                )}
-              </TableCell>
+      <div className="overflow-auto max-h-[60vh]">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16 sticky top-0 bg-white">N° Page</TableHead>
+              <TableHead className="sticky top-0 bg-white">Nom(s) & Prénom(s)</TableHead>
+              <TableHead className="sticky top-0 bg-white">Matricule</TableHead>
+              <TableHead className="w-24 sticky top-0 bg-white">Fichier</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {extractedInfos.map((info) => {
+              const fileIndex = info.pageNumber - 1;
+              const generatedFile = generatedFiles.length > fileIndex ? generatedFiles[fileIndex] : null;
+              
+              return (
+                <TableRow key={info.pageNumber}>
+                  <TableCell>{info.pageNumber}</TableCell>
+                  <TableCell>{info.referenceText || "Non extrait"}</TableCell>
+                  <TableCell>{info.text}</TableCell>
+                  <TableCell>
+                    {generatedFile && onDownloadFile && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDownloadFile(generatedFile)}
+                        className="hover:text-primary"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
