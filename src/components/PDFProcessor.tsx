@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PDFDocument } from 'pdf-lib';
@@ -11,6 +12,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useZipDownload } from "@/hooks/useZipDownload";
 
 interface PDFProcessorProps {
   selectedFile: File;
@@ -28,6 +30,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
   const [currentMonth, setCurrentMonth] = useState<string>("");
   const [currentYear, setCurrentYear] = useState<string>("");
   const [generatedFiles, setGeneratedFiles] = useState<string[]>([]);
+  const [processingStatus, setProcessingStatus] = useState<string>("");
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -42,17 +45,11 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
     extractAllTexts 
   } = usePDFTextExtraction(selectedFile);
 
-  const handleDownloadSingleFile = (fileName: string) => {
-    const url = localStorage.getItem(fileName);
-    if (url) {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+  const {
+    downloadSingleFile,
+    downloadAllFiles,
+    isDownloading
+  } = useZipDownload(currentMonth, currentYear);
 
   const handleTableValidation = async () => {
     if (extractedInfos.length === 0) {
@@ -66,36 +63,64 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
 
     try {
       console.log("Début du traitement du PDF");
+      setProcessingStatus("Préparation des fichiers...");
       const generatedFileNames: string[] = [];
       const pdfDoc = await PDFDocument.load(await selectedFile.arrayBuffer());
       const totalPages = pdfDoc.getPageCount();
       
-      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
-        const info = extractedInfos.find(info => info.pageNumber === pageNumber);
-        if (!info) continue;
-
-        console.log(`Traitement de la page ${pageNumber}`);
-        const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
+      // Traiter par petits lots pour éviter des problèmes de mémoire
+      const batchSize = 5;
+      
+      for (let i = 0; i < totalPages; i += batchSize) {
+        const lastIndex = Math.min(i + batchSize, totalPages);
+        setProcessingStatus(`Traitement des pages ${i+1}-${lastIndex} sur ${totalPages}...`);
         
-        // Nouveau format de nom de fichier : "Nom(s) & Prénom(s)_Matricule_AAAAMM.pdf"
-        const fileName = `${info.referenceText}_${info.text}_${currentYear}${currentMonth}.pdf`;
-        console.log(`Nom de fichier généré : ${fileName}`);
+        // Traiter chaque page dans le lot actuel
+        for (let pageNumber = i + 1; pageNumber <= lastIndex; pageNumber++) {
+          const info = extractedInfos.find(info => info.pageNumber === pageNumber);
+          if (!info) continue;
+          
+          console.log(`Traitement de la page ${pageNumber}`);
+          try {
+            const splitPdf = await splitPDFByPage(selectedFile, pageNumber);
+            
+            // Format du nom de fichier: "Nom(s) & Prénom(s)_Matricule_AAAAMM.pdf"
+            const fileName = `${info.referenceText || 'Unknown'}_${info.text || 'NoID'}_${currentYear}${currentMonth}.pdf`;
+            console.log(`Nom de fichier généré : ${fileName}`);
+            
+            const blob = new Blob([splitPdf], { type: 'application/pdf' });
+            const downloadUrl = URL.createObjectURL(blob);
+            
+            generatedFileNames.push(fileName);
+            localStorage.setItem(fileName, downloadUrl);
+          } catch (error) {
+            console.error(`Erreur lors du traitement de la page ${pageNumber}:`, error);
+          }
+        }
         
-        const blob = new Blob([splitPdf], { type: 'application/pdf' });
-        const downloadUrl = URL.createObjectURL(blob);
-        
-        generatedFileNames.push(fileName);
-        localStorage.setItem(fileName, downloadUrl);
+        // Petite pause entre les lots pour permettre au garbage collector de faire son travail
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
       
       setGeneratedFiles(generatedFileNames);
+      setProcessingStatus("");
+      
+      if (generatedFileNames.length === 0) {
+        throw new Error("Aucun fichier n'a pu être généré");
+      }
+      
+      if (generatedFileNames.length !== extractedInfos.length) {
+        console.warn(`Attention: ${extractedInfos.length - generatedFileNames.length} fichiers n'ont pas pu être générés`);
+      }
+      
       onFilesGenerated(generatedFileNames, currentMonth, currentYear);
       toast({
         title: "Traitement terminé",
-        description: "Les fichiers ont été générés avec succès.",
+        description: `${generatedFileNames.length} fichiers ont été générés avec succès.`,
       });
     } catch (error) {
       console.error("Erreur lors du traitement:", error);
+      setProcessingStatus("");
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors du traitement du PDF.",
@@ -116,7 +141,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
       
       toast({
         title: "Extraction réussie",
-        description: "Les informations ont été extraites de toutes les pages",
+        description: `Les informations ont été extraites des ${totalPages} pages`,
       });
     } catch (error) {
       console.error("Erreur lors de l'extraction:", error);
@@ -137,7 +162,7 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
 
   const handleDownloadAll = () => {
     if (generatedFiles.length > 0) {
-      generatedFiles.forEach(file => handleDownloadSingleFile(file));
+      downloadAllFiles(generatedFiles);
     }
   };
 
@@ -181,6 +206,12 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
         <div className="p-4 space-y-4">
           <PDFViewer file={selectedFile} onTextSelect={() => {}} />
 
+          {processingStatus && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-yellow-800">
+              {processingStatus}
+            </div>
+          )}
+
           {extractedInfos.length > 0 && (
             <div className="mt-4">
               <h4 className="font-medium mb-4">Informations extraites par page :</h4>
@@ -188,9 +219,10 @@ const PDFProcessor = ({ selectedFile, onFilesGenerated }: PDFProcessorProps) => 
                 extractedInfos={extractedInfos} 
                 onValidate={handleTableValidation}
                 generatedFiles={generatedFiles}
-                onDownloadFile={handleDownloadSingleFile}
+                onDownloadFile={downloadSingleFile}
                 onDownloadAll={handleDownloadAll}
                 hasGeneratedFiles={generatedFiles.length > 0}
+                isDownloading={isDownloading}
               />
             </div>
           )}

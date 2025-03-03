@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Table,
@@ -8,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Check, Download } from "lucide-react";
+import { Check, Download, FileZip, Loader2 } from "lucide-react";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -23,6 +24,7 @@ interface ExtractedInfoTableProps {
   onDownloadFile?: (fileName: string) => void;
   onDownloadAll?: () => void;
   hasGeneratedFiles: boolean;
+  isDownloading?: boolean;
 }
 
 const ExtractedInfoTable = ({ 
@@ -31,7 +33,8 @@ const ExtractedInfoTable = ({
   generatedFiles = [],
   onDownloadFile,
   onDownloadAll,
-  hasGeneratedFiles
+  hasGeneratedFiles,
+  isDownloading = false
 }: ExtractedInfoTableProps) => {
   console.log("Rendering table with extracted infos:", extractedInfos);
   console.log("Generated files:", generatedFiles);
@@ -42,7 +45,7 @@ const ExtractedInfoTable = ({
         <Button 
           onClick={onValidate}
           className="flex items-center gap-2"
-          disabled={hasGeneratedFiles}
+          disabled={hasGeneratedFiles || isDownloading}
         >
           <Check className="w-4 h-4" />
           Valider et générer les fichiers
@@ -51,12 +54,26 @@ const ExtractedInfoTable = ({
           <Button
             onClick={onDownloadAll}
             className="flex items-center gap-2"
-            variant="outline"
+            variant="secondary"
+            disabled={isDownloading}
           >
-            <Download className="w-4 h-4" />
-            Tout télécharger
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Création du ZIP en cours...
+              </>
+            ) : (
+              <>
+                <FileZip className="w-4 h-4" />
+                Télécharger all.zip ({generatedFiles.length} fichiers)
+              </>
+            )}
           </Button>
         )}
+      </div>
+
+      <div className="bg-blue-50 rounded p-3 mb-4 text-sm text-blue-800">
+        <strong>{extractedInfos.length}</strong> pages détectées. {hasGeneratedFiles && <strong>{generatedFiles.length}</strong>} fichiers générés.
       </div>
 
       <Table>
@@ -81,6 +98,7 @@ const ExtractedInfoTable = ({
                     size="icon"
                     onClick={() => onDownloadFile(generatedFiles[info.pageNumber - 1])}
                     className="hover:text-primary"
+                    disabled={isDownloading}
                   >
                     <Download className="w-4 h-4" />
                   </Button>
