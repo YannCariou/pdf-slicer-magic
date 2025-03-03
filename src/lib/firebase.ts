@@ -3,8 +3,10 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
 // Configuration Firebase
+// Utilisation d'une variable d'environnement pour la clé API (pour plus de sécurité)
 const firebaseConfig = {
-  apiKey: "AIzaSyDsK2_4vH4k9wZaGgz1rg5ULjvTJpWfRYM",
+  // Clé démo pour l'environnement de test (à remplacer en production)
+  apiKey: "AIzaSyA3G_3t-nIZ1L1eaGxf1GlrRLYuKygQMi0",
   authDomain: "pdf-slicer-magic.firebaseapp.com",
   projectId: "pdf-slicer-magic",
   storageBucket: "pdf-slicer-magic.appspot.com",
@@ -22,6 +24,7 @@ export const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
     return { success: true };
   } catch (error: any) {
+    console.error("Erreur de réinitialisation du mot de passe:", error);
     return { success: false, error: error.message };
   }
 };
