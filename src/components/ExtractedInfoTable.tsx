@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Check, Download, FileZip, Loader2 } from "lucide-react";
+import { Check, Download, Archive, Loader2 } from "lucide-react";
 
 interface ExtractedInfo {
   pageNumber: number;
@@ -64,7 +64,7 @@ const ExtractedInfoTable = ({
               </>
             ) : (
               <>
-                <FileZip className="w-4 h-4" />
+                <Archive className="w-4 h-4" />
                 Télécharger all.zip ({generatedFiles.length} fichiers)
               </>
             )}
